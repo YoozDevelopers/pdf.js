@@ -631,8 +631,20 @@ function normalizeWheelEventDelta(evt) {
   return delta;
 }
 
-function isValidRotation(angle) {
-  return Number.isInteger(angle) && angle % 90 === 0;
+// MODIF - change function in next 14 lines
+function isValidRotation(pagesRotation) {
+  if (!pagesRotation) {
+    return false;
+  }
+  let res = true;
+  for (let i = 0; i < pagesRotation.length; i++) {
+    let angle = pagesRotation[i];
+    let isCorrect = Number.isInteger(angle) && angle % 90 === 0;
+    if (!isCorrect) {
+      res = false;
+    }
+  }
+  return res;
 }
 
 function isValidScrollMode(mode) {

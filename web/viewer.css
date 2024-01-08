@@ -214,13 +214,15 @@
   margin: 0;
 }
 
-html,
-body {
+/* MODIF next two selectors */
+.outerHtml,
+.outerBody {
   height: 100%;
   width: 100%;
 }
 
-body {
+/* MODIF next selector */
+.outerBody {
   background-color: var(--body-bg-color);
   scrollbar-color: var(--scrollbar-color) var(--scrollbar-bg-color);
 }
@@ -836,8 +838,10 @@ body {
   height: 1px;
 }
 
-:is(.toolbarButton, .secondaryToolbarButton, .treeItemToggler)::before,
-.dropdownToolbarButton::after {
+.toolbarButton::before,
+.secondaryToolbarButton::before,
+.dropdownToolbarButton::after,
+.treeItemToggler::before {
   /* All matching images have a size of 16x16
    * All relevant containers have a size of 28x28 */
   position: absolute;

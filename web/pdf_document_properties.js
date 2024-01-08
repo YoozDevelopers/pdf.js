@@ -201,7 +201,8 @@ class PDFDocumentProperties {
     this.#fieldData = null;
     this._dataAvailableCapability = new PromiseCapability();
     this._currentPageNumber = 1;
-    this._pagesRotation = 0;
+    // MODIF - rotations is an array for next 1 line
+    this._pagesRotation = [];
   }
 
   /**

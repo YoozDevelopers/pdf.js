@@ -158,6 +158,8 @@ class PDFPageView {
       options.isOffscreenCanvasSupported ?? true;
     this.maxCanvasPixels = options.maxCanvasPixels ?? MAX_CANVAS_PIXELS;
     this.pageColors = options.pageColors || null;
+    // MODIF - adding baseViewer in next 1 line
+    this.baseViewer = options.baseViewer;
 
     this.eventBus = options.eventBus;
     this.renderingQueue = options.renderingQueue;
@@ -176,6 +178,12 @@ class PDFPageView {
     this.annotationEditorLayer = null;
     this.textLayer = null;
     this.zoomLayer = null;
+    // MODIF - adding new variables for wordLayer in next 5 lines
+    this.wordLayer = null;
+    this.wordLayerResolve = null;
+    this.wordLayerPromise = new Promise((resolve, reject) => {
+      this.wordLayerResolve = resolve;
+    });
     this.xfaLayer = null;
     this.structTreeLayer = null;
     this.drawLayer = null;
@@ -724,6 +732,15 @@ class PDFPageView {
       this.annotationLayer = null;
       this._annotationCanvasMap = null;
     }
+    // MODIF - cleaning wordLayer in next 8 lines
+    if (this.wordLayer) {
+      this.wordLayer.cleanup();
+      this.wordLayer = null;
+      this.wordLayerResolve = null;
+      this.wordLayerPromise = new Promise((resolve, reject) => {
+        this.wordLayerResolve = resolve;
+      });
+    }
     if (
       this.annotationEditorLayer &&
       (!keepAnnotationEditorLayer || !this.annotationEditorLayer.div)
@@ -867,7 +884,7 @@ class PDFPageView {
     // overflow will be hidden in Firefox.
     const canvasWrapper = document.createElement("div");
     canvasWrapper.classList.add("canvasWrapper");
-    div.append(canvasWrapper);
+    div.prepend(canvasWrapper); // MODIF making sure canvasWrapper is always in first position
 
     if (
       !this.textLayer &&
@@ -889,6 +906,11 @@ class PDFPageView {
         this.div.append(textLayerDiv);
         this.l10n.resume();
       };
+      // MODIF - adding createWordLayer call in next 4 lines
+      const self = this;
+      pdfPage.getTextContent().then(function(textContent) {
+        self.createWordLayer(textContent);
+      });
     }
 
     if (
@@ -1105,6 +1127,31 @@ class PDFPageView {
     return directDrawing && initialOptionalContent && regularAnnotations
       ? this.canvas
       : null;
+  }
+
+  // MODIF - adding new function createWordLayer in next 23 lines
+  createWordLayer(textContent) {
+    let div = this.div;
+
+    // delete existing wordLayer
+    const elements = div.getElementsByClassName('wordLayer');
+    for (let element of Array.from(elements)) {
+      element.remove();
+    }
+
+    // add current wordLayer
+    let wordLayerDiv = document.createElement("div");
+    wordLayerDiv.className = "wordLayer";
+    wordLayerDiv.style.width = div.style.width;
+    wordLayerDiv.style.height = div.style.height;
+    div.appendChild(wordLayerDiv);
+    this.wordLayer = this.baseViewer.createWordLayerBuilder(
+      wordLayerDiv,
+      this.id - 1,
+      this.viewport,
+      textContent
+    );
+    this.wordLayerResolve(true);
   }
 }
 

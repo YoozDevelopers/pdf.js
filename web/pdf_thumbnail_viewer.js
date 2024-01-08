@@ -169,7 +169,8 @@ class PDFThumbnailViewer {
     this._thumbnails = [];
     this._currentPageNumber = 1;
     this._pageLabels = null;
-    this._pagesRotation = 0;
+    // MODIF - rotations is an array for next 1 line
+    this._pagesRotation = [];
 
     // Remove the thumbnails from the DOM.
     this.container.textContent = "";

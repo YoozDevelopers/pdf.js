@@ -67,6 +67,8 @@ import { NullL10n } from "web-l10n_utils";
 import { PDFPageView } from "./pdf_page_view.js";
 import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
 import { SimpleLinkService } from "./pdf_link_service.js";
+// MODIF - importing WordLayer in next 1 line
+import { WordLayer } from '../../src/layers/word_layer';
 
 const DEFAULT_CACHE_SIZE = 10;
 
@@ -240,13 +242,16 @@ class PDFViewer {
    * @param {PDFViewerOptions} options
    */
   constructor(options) {
-    const viewerVersion =
-      typeof PDFJSDev !== "undefined" ? PDFJSDev.eval("BUNDLE_VERSION") : null;
-    if (version !== viewerVersion) {
-      throw new Error(
-        `The API version "${version}" does not match the Viewer version "${viewerVersion}".`
-      );
-    }
+    // MODIF comment next 7 lines
+    // const viewerVersion =
+    //   typeof PDFJSDev !== "undefined" ? PDFJSDev.eval("BUNDLE_VERSION") : null;
+    // if (version !== viewerVersion) {
+    //   throw new Error(
+    //     `The API version "${version}" does not match the Viewer version "${viewerVersion}".`
+    //   );
+    // }
+    // MODIF - adding cursorTools in next 1 line
+    this.cursorTools = options.cursorTools;
     this.container = options.container;
     this.viewer = options.viewer || options.container.firstElementChild;
 
@@ -293,6 +298,10 @@ class PDFViewer {
     this.l10n = options.l10n || NullL10n;
     this.#enablePermissions = options.enablePermissions || false;
     this.pageColors = options.pageColors || null;
+    
+    // MODIF - add custom variables in next 2 lines
+    this.customConfig = options.customConfig;
+    this.customViewer = options.customViewer;
 
     this.defaultRenderingQueue = !options.renderingQueue;
     if (
@@ -480,6 +489,14 @@ class PDFViewer {
     this.#setScale(val, { noScroll: false });
   }
 
+  // MODIF - add new function in next 6 lines
+  setCurrentScaleValue(val, fromScaleChangingButtons) {
+    if (!this.pdfDocument) {
+      return;
+    }
+    this.#setScale(val, { noScroll: false }, fromScaleChangingButtons);
+  }
+
   /**
    * @type {string}
    */
@@ -515,18 +532,31 @@ class PDFViewer {
       return;
     }
     // Normalize the rotation, by clamping it to the [0, 360) range.
-    rotation %= 360;
-    if (rotation < 0) {
-      rotation += 360;
-    }
+    // MODIF - commenting next 4 lines
+    // rotation %= 360;
+    // if (rotation < 0) {
+    //   rotation += 360;
+    // }
     if (this._pagesRotation === rotation) {
       return; // The rotation didn't change.
+    }
+    // MODIF - add next 6 lines
+    let pagesList = [];
+    for (let k = 0, kk = this._pages.length; k < kk; k++) {
+      if (rotation[k] !== this._pagesRotation[k]) {
+        pagesList.push(k+1);
+      }
     }
     this._pagesRotation = rotation;
 
     const pageNumber = this._currentPageNumber;
 
     this.refresh(true, { rotation });
+    // MODIF - modifing next 3 lines
+    // const updateArgs = { rotation };
+    for (let k = 0, kk = this._pages.length; k < kk; k++) {
+      this._pages[k].update({ rotation: rotation[k] });
+    }
 
     // Prevent errors in case the rotation changes *before* the scale has been
     // set to a non-default value.
@@ -917,6 +947,8 @@ class PDFViewer {
             optionalContentConfigPromise,
             renderingQueue: this.renderingQueue,
             textLayerMode,
+            // MODIF - adding baseViewer in next 1 line
+            baseViewer: this,
             annotationMode,
             imageResourcesPath: this.imageResourcesPath,
             isOffscreenCanvasSupported: this.isOffscreenCanvasSupported,
@@ -925,6 +957,8 @@ class PDFViewer {
             l10n: this.l10n,
             layerProperties: this._layerProperties,
           });
+          // MODIF - add default rotation
+          this._pagesRotation.push(0);
           this._pages.push(pageView);
         }
         // Set the first `pdfPage` immediately, since it's already loaded,
@@ -1064,7 +1098,8 @@ class PDFViewer {
     this._pageLabels = null;
     this.#buffer = new PDFPageViewBuffer(DEFAULT_CACHE_SIZE);
     this._location = null;
-    this._pagesRotation = 0;
+    // MODIF - rotations is an array
+    this._pagesRotation = [];
     this._optionalContentConfigPromise = null;
     this._firstPageCapability = new PromiseCapability();
     this._onePageRenderedCapability = new PromiseCapability();
@@ -1230,10 +1265,12 @@ class PDFViewer {
     );
   }
 
+  // MODIF - add new arg on next 1 line
   #setScaleUpdatePages(
     newScale,
     newValue,
-    { noScroll = false, preset = false, drawingDelay = -1 }
+    { noScroll = false, preset = false, drawingDelay = -1 },
+    fromScaleChangingButtons = false
   ) {
     this._currentScaleValue = newValue.toString();
 
@@ -1243,6 +1280,8 @@ class PDFViewer {
           source: this,
           scale: newScale,
           presetValue: newValue,
+          // MODIF - add new arg on next 1 line
+          fromScaleChangingButtons,
         });
       }
       return;
@@ -1295,6 +1334,8 @@ class PDFViewer {
       source: this,
       scale: newScale,
       presetValue: preset ? newValue : undefined,
+      // MODIF - add new arg on next 1 line
+      fromScaleChangingButtons,
     });
 
     if (this.defaultRenderingQueue) {
@@ -1317,7 +1358,8 @@ class PDFViewer {
 
     if (scale > 0) {
       options.preset = false;
-      this.#setScaleUpdatePages(scale, value, options);
+      // MODIF - add new arg in next 1 line
+      this.#setScaleUpdatePages(scale, value, options, fromScaleChangingButtons);
     } else {
       const currentPage = this._pages[this._currentPageNumber - 1];
       if (!currentPage) {
@@ -1376,7 +1418,8 @@ class PDFViewer {
           return;
       }
       options.preset = true;
-      this.#setScaleUpdatePages(scale, value, options);
+      // MODIF - add new arg in next 1 line
+      this.#setScaleUpdatePages(scale, value, options, fromScaleChangingButtons);
     }
   }
 
@@ -1759,6 +1802,29 @@ class PDFViewer {
       return true;
     }
     return false;
+  }
+
+  // MODIF - adding createWordLayer function in next 21 lines
+  createWordLayerBuilder(
+    wordLayerDiv,
+    pageIndex,
+    viewport,
+    textContent
+  ) {
+    return new WordLayer({
+      wordLayerDiv,
+      eventBus: this.eventBus,
+      pageIndex,
+      viewport,
+      findController: this.isInPresentationMode ? null : this.findController,
+      textContent,
+      container: this.container,
+      linkService: this.linkService,
+      pageView: this.getPageView(pageIndex),
+      cursorTools: this.cursorTools,
+      config: this.customConfig,
+      viewer: this.customViewer
+    });
   }
 
   /**

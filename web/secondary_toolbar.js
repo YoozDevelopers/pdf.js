@@ -82,6 +82,17 @@ class SecondaryToolbar {
         close: false,
       },
       {
+        // MODIF - adding 2 new rotations in next 10 lines
+        element: options.onePageRotateCwButton,
+        eventName: "rotatepagecw",
+        close: false,
+      },
+      {
+        element: options.onePageRotateCcwButton,
+        eventName: "rotatepageccw",
+        close: false,
+      },
+      {
         element: options.cursorSelectToolButton,
         eventName: "switchcursortool",
         eventDetails: { tool: CursorTool.SELECT },
