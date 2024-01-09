@@ -63,12 +63,12 @@ import {
   VERTICAL_PADDING,
   watchScroll,
 } from "./ui_utils.js";
-import { NullL10n } from "web-l10n_utils";
+import { NullL10n } from "./l10n_utils.js";
 import { PDFPageView } from "./pdf_page_view.js";
 import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
 import { SimpleLinkService } from "./pdf_link_service.js";
 // MODIF - importing WordLayer in next 1 line
-import { WordLayer } from '../../src/layers/word_layer';
+import { WordLayer } from '../../src/layers/word_layer.ts';
 
 const DEFAULT_CACHE_SIZE = 10;
 
