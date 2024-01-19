@@ -298,7 +298,7 @@ class PDFViewer {
     this.l10n = options.l10n || NullL10n;
     this.#enablePermissions = options.enablePermissions || false;
     this.pageColors = options.pageColors || null;
-    
+
     // MODIF - add custom variables in next 2 lines
     this.customConfig = options.customConfig;
     this.customViewer = options.customViewer;
@@ -1353,7 +1353,7 @@ class PDFViewer {
     return 1;
   }
 
-  #setScale(value, options) {
+  #setScale(value, options, fromScaleChangingButtons) {
     let scale = parseFloat(value);
 
     if (scale > 0) {

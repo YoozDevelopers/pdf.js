@@ -32,13 +32,6 @@ if (typeof PDFJSDev !== "undefined" && PDFJSDev.test("MOZCENTRAL")) {
 }
 
 let fs, http, https, url;
-if (isNodeJS) {
-  // Native packages.
-  fs = await __non_webpack_import__("fs");
-  http = await __non_webpack_import__("http");
-  https = await __non_webpack_import__("https");
-  url = await __non_webpack_import__("url");
-}
 
 const fileUriRegex = /^file:\/\/\/[a-zA-Z]:\//;
 

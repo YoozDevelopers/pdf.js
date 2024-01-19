@@ -1982,9 +1982,10 @@ if (typeof PDFJSDev === "undefined" || PDFJSDev.test("GENERIC")) {
     // Workers aren't supported in Node.js, force-disabling them there.
     PDFWorkerUtil.isWorkerDisabled = true;
 
-    GlobalWorkerOptions.workerSrc ||= PDFJSDev.test("LIB")
-      ? "../pdf.worker.js"
-      : "./pdf.worker.mjs";
+    GlobalWorkerOptions.workerSrc ||=
+      typeof PDFJSDev !== "undefined" && PDFJSDev.test("LIB")
+        ? "../pdf.worker.js"
+        : "./pdf.worker.mjs";
   }
 
   // Check if URLs have the same origin. For non-HTTP based URLs, returns false.

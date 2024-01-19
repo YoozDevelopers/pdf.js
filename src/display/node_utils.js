@@ -28,17 +28,6 @@ if (typeof PDFJSDev !== "undefined" && PDFJSDev.test("MOZCENTRAL")) {
 }
 
 let fs, canvas, path2d_polyfill;
-if (isNodeJS) {
-  // Native packages.
-  fs = await __non_webpack_import__("fs");
-  // Optional, third-party, packages.
-  try {
-    canvas = await __non_webpack_import__("canvas");
-  } catch {}
-  try {
-    path2d_polyfill = await __non_webpack_import__("path2d-polyfill");
-  } catch {}
-}
 
 if (typeof PDFJSDev !== "undefined" && !PDFJSDev.test("SKIP_BABEL")) {
   (function checkDOMMatrix() {

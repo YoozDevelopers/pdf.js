@@ -40,17 +40,14 @@ async function docProperties(pdfDocument) {
 }
 
 class GenericScripting {
-  constructor(sandboxBundleSrc) {
-    this._ready = new Promise((resolve, reject) => {
-      const sandbox =
-        typeof PDFJSDev === "undefined"
-          ? import(sandboxBundleSrc) // eslint-disable-line no-unsanitized/method
-          : __non_webpack_import__(sandboxBundleSrc);
-      sandbox
-        .then(pdfjsSandbox => {
-          resolve(pdfjsSandbox.QuickJSSandbox());
-        })
-        .catch(reject);
+  constructor() {
+    this._ready = new Promise(async (resolve, reject) => {
+      try {
+        const sandbox = await import("../src/pdf.sandbox.js");
+        resolve(sandbox.QuickJSSandbox());
+      } catch (e) {
+        reject(e);
+      }
     });
   }
 

@@ -17,8 +17,6 @@ import {
   animationStarted,
   apiPageLayoutToViewerModes,
   apiPageModeToSidebarView,
-  AutoPrintRegExp,
-  CursorTool,
   DEFAULT_SCALE_VALUE,
   getActiveOrFocusedElement,
   isValidRotation,
@@ -45,7 +43,6 @@ import {
   isDataScheme,
   isPdfFile,
   MissingPDFException,
-  PDFWorker,
   PromiseCapability,
   shadow,
   UnexpectedResponseException,
@@ -459,8 +456,8 @@ const PDFViewerApplication = {
       enablePermissions: AppOptions.get("enablePermissions"),
       pageColors,
       // MODIF - add custom variables in next 2 lines
-      customConfig: AppOptions.get('customConfig'),
-      customViewer: AppOptions.get('customViewer')
+      customConfig: AppOptions.get("customConfig"),
+      customViewer: AppOptions.get("customViewer"),
     });
     this.pdfViewer = pdfViewer;
 
@@ -660,26 +657,26 @@ const PDFViewerApplication = {
         });
       });
 
-    // MODIF - Next 18 lines : disable drop file to prevent open new file by drag&drop
-    // Enable dragging-and-dropping a new PDF file onto the viewerContainer.
-    // appConfig.mainContainer.addEventListener("dragover", function (evt) {
-    //   evt.preventDefault();
+      // MODIF - Next 18 lines : disable drop file to prevent open new file by drag&drop
+      // Enable dragging-and-dropping a new PDF file onto the viewerContainer.
+      // appConfig.mainContainer.addEventListener("dragover", function (evt) {
+      //   evt.preventDefault();
 
-    //   evt.dataTransfer.dropEffect =
-    //     evt.dataTransfer.effectAllowed === "copy" ? "copy" : "move";
-    // });
-    // appConfig.mainContainer.addEventListener("drop", function (evt) {
-    //   evt.preventDefault();
+      //   evt.dataTransfer.dropEffect =
+      //     evt.dataTransfer.effectAllowed === "copy" ? "copy" : "move";
+      // });
+      // appConfig.mainContainer.addEventListener("drop", function (evt) {
+      //   evt.preventDefault();
 
-    //   const { files } = evt.dataTransfer;
-    //   if (!files || files.length === 0) {
-    //     return;
-    //   }
-    //   eventBus.dispatch("fileinputchange", {
-    //     source: this,
-    //     fileInput: evt.dataTransfer,
-    //   });
-    // });
+      //   const { files } = evt.dataTransfer;
+      //   if (!files || files.length === 0) {
+      //     return;
+      //   }
+      //   eventBus.dispatch("fileinputchange", {
+      //     source: this,
+      //     fileInput: evt.dataTransfer,
+      //   });
+      // });
     }
 
     if (!AppOptions.get("supportsDocumentFonts")) {
@@ -874,7 +871,6 @@ const PDFViewerApplication = {
 
     if (this.isViewerEmbedded) {
       // Embedded PDF viewers should not be changing their parent page's title.
-      return;
     }
     // MODIF - do not change title for next 3 lines
     // const editorIndicator =
@@ -1155,8 +1151,8 @@ const PDFViewerApplication = {
    */
   _otherError(message, moreInfo = null) {
     // MODIF - modify moreInfo message in next 2 lines
-    const regex = /".*?"\./
-    moreInfo.message = moreInfo.message.replace(regex, '');
+    const regex = /".*?"\./;
+    moreInfo.message = moreInfo.message.replace(regex, "");
     const moreInfoText = [`PDF.js v${version || "?"} (build: ${build || "?"})`];
     if (moreInfo) {
       moreInfoText.push(`Message: ${moreInfo.message}`);
@@ -1489,7 +1485,7 @@ const PDFViewerApplication = {
     if (pdfDocument !== this.pdfDocument) {
       return; // The document was closed while the auto print data resolved.
     }
-    let triggerAutoPrint = openAction?.action === "Print";
+    const triggerAutoPrint = openAction?.action === "Print";
 
     if (jsActions) {
       console.warn("Warning: JavaScript support is not enabled");
@@ -1497,18 +1493,18 @@ const PDFViewerApplication = {
       // Hack to support auto printing.
       // MODIF - disable hack by commenting in next 14 lines
       // for (const name in jsActions) {
-        // if (triggerAutoPrint) {
-          // break;
-        // }
-        // switch (name) {
-          // case "WillClose":
-          // case "WillSave":
-          // case "DidSave":
-          // case "WillPrint":
-          // case "DidPrint":
-            // continue;
-        // }
-        // triggerAutoPrint = jsActions[name].some(js => AutoPrintRegExp.test(js));
+      // if (triggerAutoPrint) {
+      // break;
+      // }
+      // switch (name) {
+      // case "WillClose":
+      // case "WillSave":
+      // case "DidSave":
+      // case "WillPrint":
+      // case "DidPrint":
+      // continue;
+      // }
+      // triggerAutoPrint = jsActions[name].some(js => AutoPrintRegExp.test(js));
       // }
     }
 
@@ -1730,9 +1726,9 @@ const PDFViewerApplication = {
 
     // MODIF - disable history in next 4 lines
     // ignore hash
-    storedHash = '';
+    storedHash = "";
     // ignore bookmark
-    this.initialBookmark = '';
+    this.initialBookmark = "";
 
     if (this.initialBookmark) {
       setRotation(this.initialRotation);
@@ -1870,9 +1866,9 @@ const PDFViewerApplication = {
     if (!this.pdfDocument) {
       return;
     }
-    let pagesRotation = this.pdfViewer.pagesRotation;
+    const pagesRotation = this.pdfViewer.pagesRotation;
     // rotate all pages
-    this.pdfViewer.pagesRotation = pagesRotation.map((pageRotation) => {
+    this.pdfViewer.pagesRotation = pagesRotation.map(pageRotation => {
       return (pageRotation + 360 + delta) % 360;
     });
   },
@@ -1888,11 +1884,11 @@ const PDFViewerApplication = {
     if (!this.pdfDocument) {
       return;
     }
-    let pagesRotation = this.pdfViewer.pagesRotation;
+    const pagesRotation = this.pdfViewer.pagesRotation;
     // rotate only current page
     this.pdfViewer.pagesRotation = pagesRotation.map((pageRotation, index) => {
-      let newRotation = (pageRotation + 360 + delta) % 360;
-      return (index === this.page - 1) ? newRotation : pageRotation;
+      const newRotation = (pageRotation + 360 + delta) % 360;
+      return index === this.page - 1 ? newRotation : pageRotation;
     });
   },
 
@@ -2256,7 +2252,6 @@ if (typeof PDFJSDev === "undefined" || PDFJSDev.test("GENERIC")) {
 async function loadFakeWorker() {
   // MODIF - ccommenting next 8 lines
   // GlobalWorkerOptions.workerSrc ||= AppOptions.get("workerSrc");
-
   // if (typeof PDFJSDev === "undefined" || !PDFJSDev.test("PRODUCTION")) {
   //   window.pdfjsWorker = await import("pdfjs/pdf.worker.js");
   //   return;
@@ -2271,7 +2266,6 @@ async function loadPDFBug(self) {
   //   typeof PDFJSDev === "undefined" || !PDFJSDev.test("PRODUCTION")
   //     ? await import(debuggerScriptPath) // eslint-disable-line no-unsanitized/method
   //     : await __non_webpack_import__(debuggerScriptPath); // eslint-disable-line no-undef
-
   // self._PDFBug = PDFBug;
 }
 
@@ -3021,15 +3015,16 @@ function webViewerKeyDown(evt) {
         break;
       case 48: // '0'
       case 96: // '0' on Numpad of Swedish keyboard
-        // MODIF - commenting next 8 lines
-        // if (!isViewerInPresentationMode) {
-        //   // keeping it unhandled (to restore page zoom to 100%)
-        //   setTimeout(function () {
-        //     // ... and resetting the scale after browser adjusts its scale
-        //     PDFViewerApplication.zoomReset();
-        //   });
-        //   handled = false;
-        // }
+      // MODIF - commenting next 8 lines
+      // if (!isViewerInPresentationMode) {
+      //   // keeping it unhandled (to restore page zoom to 100%)
+      //   setTimeout(function () {
+      //     // ... and resetting the scale after browser adjusts its scale
+      //     PDFViewerApplication.zoomReset();
+      //   });
+      //   handled = false;
+      // }
+        break;
 
       case 38: // up arrow
         // MODIF - commenting next 5 lines
@@ -3142,11 +3137,11 @@ function webViewerKeyDown(evt) {
         turnPage = -1;
         break;
       case 37: // left arrow
-        // horizontal scrolling using arrow keys
-        // MODIF - commenting next 3 lines
-        // if (pdfViewer.isHorizontalScrollbarEnabled) {
-        //   turnOnlyIfPageFit = true;
-        // }
+      // horizontal scrolling using arrow keys
+      // MODIF - commenting next 3 lines
+      // if (pdfViewer.isHorizontalScrollbarEnabled) {
+      //   turnOnlyIfPageFit = true;
+      // }
       /* falls through */
       case 75: // 'k'
       case 80: // 'p'
@@ -3182,11 +3177,11 @@ function webViewerKeyDown(evt) {
         turnPage = 1;
         break;
       case 39: // right arrow
-        // horizontal scrolling using arrow keys
-        // MODIF - commenting next 3 lines
-        // if (pdfViewer.isHorizontalScrollbarEnabled) {
-        //   turnOnlyIfPageFit = true;
-        // }
+      // horizontal scrolling using arrow keys
+      // MODIF - commenting next 3 lines
+      // if (pdfViewer.isHorizontalScrollbarEnabled) {
+      //   turnOnlyIfPageFit = true;
+      // }
       /* falls through */
       case 74: // 'j'
       case 78: // 'n'
