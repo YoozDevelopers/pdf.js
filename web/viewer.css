@@ -850,7 +850,6 @@
   height: 16px;
 
   content: "";
-  background-color: var(--toolbar-icon-bg-color);
   mask-size: cover;
 }
 
@@ -862,11 +861,6 @@
   opacity: var(--toolbar-icon-opacity);
   top: 6px;
   left: 6px;
-}
-
-.toolbarButton:is(:hover, :focus-visible)::before,
-.secondaryToolbarButton:is(:hover, :focus-visible)::before {
-  background-color: var(--toolbar-icon-hover-bg-color);
 }
 
 .secondaryToolbarButton::before {
