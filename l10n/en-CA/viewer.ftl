@@ -75,6 +75,12 @@ pdfjs-page-rotate-cw-button-label = Rotate Clockwise
 pdfjs-page-rotate-ccw-button =
     .title = Rotate Counterclockwise
 pdfjs-page-rotate-ccw-button-label = Rotate Counterclockwise
+pdfjs-one-page-rotate-cw-button =
+.title = Rotate Page Clockwise
+pdfjs-one-page-rotate-cw-button-label = Rotate Page Clockwise
+pdfjs-one-page-rotate-ccw-button =
+.title = Rotate Page Anti-Clockwise
+pdfjs-one-page-rotate-ccw-button-label = Rotate Page Anti-Clockwise
 pdfjs-cursor-text-select-tool-button =
     .title = Enable Text Selection Tool
 pdfjs-cursor-text-select-tool-button-label = Text Selection Tool
@@ -309,3 +315,4 @@ pdfjs-ink-canvas =
 ## Editor resizers
 ## This is used in an aria label to help to understand the role of the resizer.
 
+pdfjs-certificate-loading = Loading...

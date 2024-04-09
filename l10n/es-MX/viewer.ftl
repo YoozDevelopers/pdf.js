@@ -69,6 +69,12 @@ pdfjs-page-rotate-cw-button-label = Girar a la derecha
 pdfjs-page-rotate-ccw-button =
     .title = Girar a la izquierda
 pdfjs-page-rotate-ccw-button-label = Girar a la izquierda
+pdfjs-one-page-rotate-cw-button =
+.title = Girar pagina a la derecha
+pdfjs-one-page-rotate-cw-button-label = Girar pagina a la derecha
+pdfjs-one-page-rotate-ccw-button =
+.title = Girar pagina a la izquierda
+pdfjs-one-page-rotate-ccw-button-label = Girar pagina a la izquierda
 pdfjs-cursor-text-select-tool-button =
     .title = Activar la herramienta de selección de texto
 pdfjs-cursor-text-select-tool-button-label = Herramienta de selección de texto
@@ -297,3 +303,4 @@ pdfjs-ink-canvas =
 ## Editor resizers
 ## This is used in an aria label to help to understand the role of the resizer.
 
+pdfjs-certificate-loading = Cargando...

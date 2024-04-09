@@ -87,7 +87,8 @@ class PDFPrintService {
   layout() {
     this.throwIfInactive();
 
-    const body = document.querySelector("body");
+    // MODIF - Next 1 line
+    const body = document.querySelector(".outerBody");
     body.setAttribute("data-pdfjsprinting", true);
 
     const { width, height } = this.pagesOverview[0];
@@ -206,7 +207,45 @@ class PDFPrintService {
           resolve();
           return;
         }
-        print.call(window);
+        // MODIF - change print call function for next 36 lines
+        /**
+         * EFR DR-8560 On injecte le css nescessaire pour que l'impression ce passe bien
+         */
+        const openWindow = window.open("", "title", "attributes");
+        openWindow.document.write(`
+        <html>
+          <head>
+            <style>
+              @page {
+                margin: 0;
+              }
+              body{
+                margin: 0;
+              }
+              .printedPage {
+                height: 100%;
+                width: 100%;
+              }
+              .printedPage img {
+                /* The intrinsic canvas / image size will make sure that we fit the page. */
+                max-width: 100%;
+                max-height: 100%;
+              }
+            </style>
+            <script>
+              window.addEventListener("load", function(){
+                window.onafterprint = () => {
+                  window.close();
+                };
+                window.print();
+              });
+            </script>
+        </head>`);
+        openWindow.document.write(this.printContainer.innerHTML);
+        openWindow.document.close();
+        openWindow.focus();
+        // fin Modif
+
         // Delay promise resolution in case print() was not synchronous.
         setTimeout(resolve, 20); // Tidy-up.
       }, 0);
@@ -307,7 +346,9 @@ window.addEventListener(
       event.keyCode === /* P= */ 80 &&
       (event.ctrlKey || event.metaKey) &&
       !event.altKey &&
-      (!event.shiftKey || window.chrome || window.opera)
+      (!event.shiftKey || window.chrome || window.opera) &&
+      // MODIF - added condition in next 1 line
+      !document.disablePrinting
     ) {
       window.print();
 

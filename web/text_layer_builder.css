@@ -23,7 +23,7 @@
   text-size-adjust: none;
   forced-color-adjust: none;
   transform-origin: 0 0;
-  z-index: 2;
+  /* z-index: 2; MODIF - avec un z-index le mouseover ne se lance pas*/
 
   :is(span, br) {
     color: transparent;

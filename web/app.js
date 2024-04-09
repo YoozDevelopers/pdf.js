@@ -2440,6 +2440,7 @@ function webViewerResize() {
   if (!pdfDocument) {
     return;
   }
+  // TODO: This is to be removed
   const currentScaleValue = pdfViewer.currentScaleValue;
   if (
     currentScaleValue === "auto" ||
@@ -3015,15 +3016,15 @@ function webViewerKeyDown(evt) {
         break;
       case 48: // '0'
       case 96: // '0' on Numpad of Swedish keyboard
-      // MODIF - commenting next 8 lines
-      // if (!isViewerInPresentationMode) {
-      //   // keeping it unhandled (to restore page zoom to 100%)
-      //   setTimeout(function () {
-      //     // ... and resetting the scale after browser adjusts its scale
-      //     PDFViewerApplication.zoomReset();
-      //   });
-      //   handled = false;
-      // }
+        // MODIF - commenting next 8 lines
+        // if (!isViewerInPresentationMode) {
+        //   // keeping it unhandled (to restore page zoom to 100%)
+        //   setTimeout(function () {
+        //     // ... and resetting the scale after browser adjusts its scale
+        //     PDFViewerApplication.zoomReset();
+        //   });
+        //   handled = false;
+        // }
         break;
 
       case 38: // up arrow

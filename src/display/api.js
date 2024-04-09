@@ -1974,7 +1974,7 @@ class LoopbackPort {
  */
 
 const PDFWorkerUtil = {
-  isWorkerDisabled: false,
+  isWorkerDisabled: true,
   fakeWorkerId: 0,
 };
 if (typeof PDFJSDev === "undefined" || PDFJSDev.test("GENERIC")) {

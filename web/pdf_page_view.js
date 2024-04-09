@@ -332,6 +332,16 @@ class PDFPageView {
     );
   }
 
+  async #renderWordLayer() {
+    let error = null;
+    try {
+      await this.wordLayer.render(this.viewport);
+    } catch (ex) {
+      console.error(`#renderWordLayer: "${ex}".`);
+      error = ex;
+    }
+  }
+
   async #renderAnnotationLayer() {
     let error = null;
     try {
@@ -906,11 +916,30 @@ class PDFPageView {
         this.div.append(textLayerDiv);
         this.l10n.resume();
       };
-      // MODIF - adding createWordLayer call in next 4 lines
-      const self = this;
-      pdfPage.getTextContent().then(function(textContent) {
-        self.createWordLayer(textContent);
-      });
+    }
+
+    // MODIF - creating wordLayer in next 17 lines
+    if (!this.wordLayer) {
+      const textContent = await pdfPage.getTextContent();
+      const style = window.getComputedStyle(this.div);
+      this.wordLayer = this.baseViewer.createWordLayerBuilder(
+        style.width,
+        style.height,
+        this.id - 1,
+        this.viewport,
+        textContent
+      );
+      this.wordLayerResolve(true);
+
+      this.wordLayer.onAppend = wordLayerDiv => {
+        this.l10n.pause();
+        wordLayerDiv.style.width = this.div.style.width;
+        wordLayerDiv.style.height = this.div.style.height;
+        this.wordLayer.parentHeight = this.div.style.height;
+        this.wordLayer.parentWidth = this.div.style.width;
+        this.div.append(wordLayerDiv);
+        this.l10n.resume();
+      };
     }
 
     if (
@@ -1040,6 +1069,10 @@ class PDFPageView {
           await this.#renderAnnotationLayer();
         }
 
+        if (this.wordLayer) {
+          await this.#renderWordLayer();
+        }
+
         const { annotationEditorUIManager } = this.#layerProperties;
 
         if (!annotationEditorUIManager) {
@@ -1127,31 +1160,6 @@ class PDFPageView {
     return directDrawing && initialOptionalContent && regularAnnotations
       ? this.canvas
       : null;
-  }
-
-  // MODIF - adding new function createWordLayer in next 23 lines
-  createWordLayer(textContent) {
-    let div = this.div;
-
-    // delete existing wordLayer
-    const elements = div.getElementsByClassName('wordLayer');
-    for (let element of Array.from(elements)) {
-      element.remove();
-    }
-
-    // add current wordLayer
-    let wordLayerDiv = document.createElement("div");
-    wordLayerDiv.className = "wordLayer";
-    wordLayerDiv.style.width = div.style.width;
-    wordLayerDiv.style.height = div.style.height;
-    div.appendChild(wordLayerDiv);
-    this.wordLayer = this.baseViewer.createWordLayerBuilder(
-      wordLayerDiv,
-      this.id - 1,
-      this.viewport,
-      textContent
-    );
-    this.wordLayerResolve(true);
   }
 }
 

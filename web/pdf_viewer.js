@@ -68,7 +68,7 @@ import { PDFPageView } from "./pdf_page_view.js";
 import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
 import { SimpleLinkService } from "./pdf_link_service.js";
 // MODIF - importing WordLayer in next 1 line
-import { WordLayer } from '../../src/layers/word_layer.ts';
+import { WordLayer } from "../../src/layers/word_layer.ts";
 
 const DEFAULT_CACHE_SIZE = 10;
 
@@ -544,7 +544,7 @@ class PDFViewer {
     let pagesList = [];
     for (let k = 0, kk = this._pages.length; k < kk; k++) {
       if (rotation[k] !== this._pagesRotation[k]) {
-        pagesList.push(k+1);
+        pagesList.push(k + 1);
       }
     }
     this._pagesRotation = rotation;
@@ -1359,7 +1359,12 @@ class PDFViewer {
     if (scale > 0) {
       options.preset = false;
       // MODIF - add new arg in next 1 line
-      this.#setScaleUpdatePages(scale, value, options, fromScaleChangingButtons);
+      this.#setScaleUpdatePages(
+        scale,
+        value,
+        options,
+        fromScaleChangingButtons
+      );
     } else {
       const currentPage = this._pages[this._currentPageNumber - 1];
       if (!currentPage) {
@@ -1419,7 +1424,12 @@ class PDFViewer {
       }
       options.preset = true;
       // MODIF - add new arg in next 1 line
-      this.#setScaleUpdatePages(scale, value, options, fromScaleChangingButtons);
+      this.#setScaleUpdatePages(
+        scale,
+        value,
+        options,
+        fromScaleChangingButtons
+      );
     }
   }
 
@@ -1806,14 +1816,15 @@ class PDFViewer {
 
   // MODIF - adding createWordLayer function in next 21 lines
   createWordLayerBuilder(
-    wordLayerDiv,
+    parentWidth,
+    parentHeight,
     pageIndex,
     viewport,
     textContent
   ) {
     return new WordLayer({
-      wordLayerDiv,
-      eventBus: this.eventBus,
+      parentWidth,
+      parentHeight,
       pageIndex,
       viewport,
       findController: this.isInPresentationMode ? null : this.findController,
@@ -1823,7 +1834,7 @@ class PDFViewer {
       pageView: this.getPageView(pageIndex),
       cursorTools: this.cursorTools,
       config: this.customConfig,
-      viewer: this.customViewer
+      viewer: this.customViewer,
     });
   }
 
