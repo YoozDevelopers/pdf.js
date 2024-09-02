@@ -1675,7 +1675,7 @@ describe("FreeText Editor", () => {
               clip: rect,
               type: "png",
             });
-            const editorImage = PNG.sync.read(editorPng);
+            const editorImage = PNG.sync.read(Buffer.from(editorPng));
             const editorFirstPix = getFirstPixel(
               editorImage.data,
               editorImage.width,
@@ -1703,7 +1703,7 @@ describe("FreeText Editor", () => {
               clip: rect,
               type: "png",
             });
-            const editorImage = PNG.sync.read(editorPng);
+            const editorImage = PNG.sync.read(Buffer.from(editorPng));
             const editorFirstPix = getFirstPixel(
               editorImage.data,
               editorImage.width,
@@ -1836,7 +1836,7 @@ describe("FreeText Editor", () => {
               clip: rect,
               type: "png",
             });
-            const editorImage = PNG.sync.read(editorPng);
+            const editorImage = PNG.sync.read(Buffer.from(editorPng));
             const editorFirstPix = getFirstPixel(
               editorImage.data,
               editorImage.width,
@@ -1870,7 +1870,7 @@ describe("FreeText Editor", () => {
               clip: rect,
               type: "png",
             });
-            const editorImage = PNG.sync.read(editorPng);
+            const editorImage = PNG.sync.read(Buffer.from(editorPng));
             const editorFirstPix = getFirstPixel(
               editorImage.data,
               editorImage.width,
@@ -2171,20 +2171,13 @@ describe("FreeText Editor", () => {
         "tracemonkey.pdf",
         ".annotationEditorLayer",
         100,
-        async page => {
-          await page.waitForFunction(async () => {
-            await window.PDFViewerApplication.initializedPromise;
-            return true;
-          });
-          await page.evaluate(() => {
+        {
+          eventBusSetup: eventBus => {
             window.visitedPages = [];
-            window.PDFViewerApplication.eventBus.on(
-              "pagechanging",
-              ({ pageNumber }) => {
-                window.visitedPages.push(pageNumber);
-              }
-            );
-          });
+            eventBus.on("pagechanging", ({ pageNumber }) => {
+              window.visitedPages.push(pageNumber);
+            });
+          },
         }
       );
     });
@@ -2273,6 +2266,7 @@ describe("FreeText Editor", () => {
 
           rect = await getRect(page, getEditorSelector(0));
 
+          // Create a new editor.
           await page.mouse.click(
             rect.x + 5 * rect.width,
             rect.y + 5 * rect.height
@@ -2288,11 +2282,12 @@ describe("FreeText Editor", () => {
             `${getEditorSelector(1)} .overlay.enabled`
           );
 
-          rect = await getRect(page, getEditorSelector(0));
+          // Select the second editor.
+          rect = await getRect(page, getEditorSelector(1));
 
           await page.mouse.click(
-            rect.x + 5 * rect.width,
-            rect.y + 5 * rect.height
+            rect.x + 0.5 * rect.width,
+            rect.y + 0.5 * rect.height
           );
           await waitForSelectedEditor(page, getEditorSelector(1));
 
@@ -2401,19 +2396,12 @@ describe("FreeText Editor", () => {
         "tracemonkey.pdf",
         ".annotationEditorLayer",
         100,
-        async page => {
-          await page.waitForFunction(async () => {
-            await window.PDFViewerApplication.initializedPromise;
-            return true;
-          });
-          await page.evaluate(() => {
-            window.PDFViewerApplication.eventBus.on(
-              "annotationeditorstateschanged",
-              ({ details }) => {
-                window.editingEvents?.push(details);
-              }
-            );
-          });
+        {
+          eventBusSetup: eventBus => {
+            eventBus.on("annotationeditorstateschanged", ({ details }) => {
+              window.editingEvents?.push(details);
+            });
+          },
         }
       );
     });
@@ -3601,7 +3589,7 @@ describe("FreeText Editor", () => {
             "[data-annotation-id='998R']",
             el => (el.hidden = false)
           );
-          let editorImage = PNG.sync.read(editorPng);
+          let editorImage = PNG.sync.read(Buffer.from(editorPng));
           expect(editorImage.data.every(x => x === 0xff))
             .withContext(`In ${browserName}`)
             .toBeTrue();
@@ -3648,7 +3636,7 @@ describe("FreeText Editor", () => {
             clip: editorRect,
             type: "png",
           });
-          editorImage = PNG.sync.read(editorPng);
+          editorImage = PNG.sync.read(Buffer.from(editorPng));
           expect(editorImage.data.every(x => x === 0xff))
             .withContext(`In ${browserName}`)
             .toBeFalse();

@@ -17,7 +17,10 @@
 
 class BaseExternalServices {
   constructor() {
-    if (this.constructor === BaseExternalServices) {
+    if (
+      (typeof PDFJSDev === "undefined" || PDFJSDev.test("TESTING")) &&
+      this.constructor === BaseExternalServices
+    ) {
       throw new Error("Cannot initialize BaseExternalServices.");
     }
   }
@@ -43,12 +46,6 @@ class BaseExternalServices {
 
   updateEditorStates(data) {
     throw new Error("Not implemented: updateEditorStates");
-  }
-
-  async getNimbusExperimentData() {}
-
-  async getGlobalEventNames() {
-    return null;
   }
 
   dispatchGlobalEvent(_event) {}

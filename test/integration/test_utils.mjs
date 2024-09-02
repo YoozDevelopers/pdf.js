@@ -14,9 +14,10 @@
  */
 
 import os from "os";
+
 const isMac = os.platform() === "darwin";
 
-function loadAndWait(filename, selector, zoom, pageSetup, options) {
+function loadAndWait(filename, selector, zoom, setups, options) {
   return Promise.all(
     global.integrationSessions.map(async session => {
       const page = await session.browser.newPage();
@@ -52,10 +53,58 @@ function loadAndWait(filename, selector, zoom, pageSetup, options) {
         global.integrationBaseUrl
       }?file=/test/pdfs/${filename}#zoom=${zoom ?? "page-fit"}${app_options}`;
 
-      await page.goto(url);
-      if (pageSetup) {
-        await pageSetup(page);
+      if (setups) {
+        // page.evaluateOnNewDocument allows us to run code before the
+        // first js script is executed.
+        // The idea here is to set up some setters for PDFViewerApplication
+        // and EventBus, so we can inject some code to do whatever we want
+        // soon enough especially before the first event in the eventBus is
+        // dispatched.
+        const { prePageSetup, appSetup, earlySetup, eventBusSetup } = setups;
+        await prePageSetup?.(page);
+        if (earlySetup || appSetup || eventBusSetup) {
+          await page.evaluateOnNewDocument(
+            (eaSetup, aSetup, evSetup) => {
+              if (eaSetup) {
+                // eslint-disable-next-line no-eval
+                eval(`(${eaSetup})`)();
+              }
+              let app;
+              let eventBus;
+              Object.defineProperty(window, "PDFViewerApplication", {
+                get() {
+                  return app;
+                },
+                set(newValue) {
+                  app = newValue;
+                  if (aSetup) {
+                    // eslint-disable-next-line no-eval
+                    eval(`(${aSetup})`)(app);
+                  }
+                  Object.defineProperty(app, "eventBus", {
+                    get() {
+                      return eventBus;
+                    },
+                    set(newV) {
+                      eventBus = newV;
+                      if (evSetup) {
+                        // eslint-disable-next-line no-eval
+                        eval(`(${evSetup})`)(eventBus);
+                      }
+                    },
+                  });
+                },
+              });
+            },
+            earlySetup?.toString(),
+            appSetup?.toString(),
+            eventBusSetup?.toString()
+          );
+        }
       }
+
+      await page.goto(url);
+      await setups?.postPageSetup?.(page);
 
       await page.bringToFront();
       if (selector) {
@@ -82,6 +131,13 @@ function awaitPromise(promise) {
 
 function closePages(pages) {
   return Promise.all(pages.map(([_, page]) => closeSinglePage(page)));
+}
+
+function isVisible(page, selector) {
+  return page.evaluate(
+    sel => document.querySelector(sel)?.checkVisibility(),
+    selector
+  );
 }
 
 async function closeSinglePage(page) {
@@ -119,13 +175,23 @@ function waitForTimeout(milliseconds) {
   });
 }
 
-async function clearInput(page, selector) {
-  await page.click(selector);
-  await kbSelectAll(page);
-  await page.keyboard.press("Backspace");
-  await page.waitForFunction(
-    `document.querySelector('${selector}').value === ""`
-  );
+async function clearInput(page, selector, waitForInputEvent = false) {
+  const action = async () => {
+    await page.click(selector);
+    await kbSelectAll(page);
+    await page.keyboard.press("Backspace");
+    await page.waitForFunction(
+      `document.querySelector('${selector}').value === ""`
+    );
+  };
+  return waitForInputEvent
+    ? waitForEvent({
+        page,
+        eventName: "input",
+        action,
+        selector,
+      })
+    : action();
 }
 
 function getSelector(id) {
@@ -173,7 +239,7 @@ async function getSpanRectFromText(page, pageNumber, text) {
   return page.evaluate(
     (number, content) => {
       for (const el of document.querySelectorAll(
-        `.page[data-page-number="${number}"] > .textLayer > span`
+        `.page[data-page-number="${number}"] > .textLayer span:not(:has(> span))`
       )) {
         if (el.textContent === content) {
           const { x, y, width, height } = el.getBoundingClientRect();
@@ -511,6 +577,24 @@ async function hover(page, selector) {
   await page.mouse.move(rect.x + rect.width / 2, rect.y + rect.height / 2);
 }
 
+async function setCaretAt(page, pageNumber, text, position) {
+  await page.evaluate(
+    (pageN, string, pos) => {
+      for (const el of document.querySelectorAll(
+        `.page[data-page-number="${pageN}"] > .textLayer > span`
+      )) {
+        if (el.textContent === string) {
+          window.getSelection().setPosition(el.firstChild, pos);
+          break;
+        }
+      }
+    },
+    pageNumber,
+    text,
+    position
+  );
+}
+
 const modifier = isMac ? "Meta" : "Control";
 async function kbCopy(page) {
   await page.keyboard.down(modifier);
@@ -693,6 +777,7 @@ export {
   getSerialized,
   getSpanRectFromText,
   hover,
+  isVisible,
   kbBigMoveDown,
   kbBigMoveLeft,
   kbBigMoveRight,
@@ -713,6 +798,7 @@ export {
   pasteFromClipboard,
   scrollIntoView,
   serializeBitmapDimensions,
+  setCaretAt,
   switchToEditor,
   waitForAnnotationEditorLayer,
   waitForAnnotationModeChanged,

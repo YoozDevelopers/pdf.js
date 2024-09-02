@@ -62,7 +62,10 @@ function resizeRgbImage(src, dest, w1, h1, w2, h2, alpha01) {
 
 class ColorSpace {
   constructor(name, numComps) {
-    if (this.constructor === ColorSpace) {
+    if (
+      (typeof PDFJSDev === "undefined" || PDFJSDev.test("TESTING")) &&
+      this.constructor === ColorSpace
+    ) {
       unreachable("Cannot initialize ColorSpace.");
     }
     this.name = name;
@@ -396,7 +399,9 @@ class ColorSpace {
               }
             }
           }
-          throw new FormatError(`Unrecognized ColorSpace: ${cs.name}`);
+          // Fallback to the default gray color space.
+          warn(`Unrecognized ColorSpace: ${cs.name}`);
+          return this.singletons.gray;
       }
     }
     if (Array.isArray(cs)) {
@@ -474,10 +479,14 @@ class ColorSpace {
           const range = params.getArray("Range");
           return new LabCS(whitePoint, blackPoint, range);
         default:
-          throw new FormatError(`Unimplemented ColorSpace object: ${mode}`);
+          // Fallback to the default gray color space.
+          warn(`Unimplemented ColorSpace object: ${mode}`);
+          return this.singletons.gray;
       }
     }
-    throw new FormatError(`Unrecognized ColorSpace object: ${cs}`);
+    // Fallback to the default gray color space.
+    warn(`Unrecognized ColorSpace object: ${cs}`);
+    return this.singletons.gray;
   }
 
   /**

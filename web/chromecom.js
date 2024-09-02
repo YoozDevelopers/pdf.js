@@ -36,9 +36,6 @@ if (typeof PDFJSDev === "undefined" || !PDFJSDev.test("CHROME")) {
   // Example: chrome-extension://.../http://example.com/file.pdf
   const humanReadableUrl = "/" + defaultUrl + location.hash;
   history.replaceState(history.state, "", humanReadableUrl);
-  if (top === window) {
-    chrome.runtime.sendMessage("showPageAction");
-  }
 
   AppOptions.set("defaultUrl", defaultUrl);
 })();
@@ -436,6 +433,10 @@ class ExternalServices extends BaseExternalServices {
 }
 
 class MLManager {
+  isEnabledFor(_name) {
+    return false;
+  }
+
   async guess() {
     return null;
   }

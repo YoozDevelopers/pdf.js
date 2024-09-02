@@ -41,7 +41,6 @@ import relative from "metalsmith-html-relative";
 import rename from "gulp-rename";
 import replace from "gulp-replace";
 import stream from "stream";
-import streamqueue from "streamqueue";
 import TerserPlugin from "terser-webpack-plugin";
 import Vinyl from "vinyl";
 import webpack2 from "webpack";
@@ -77,8 +76,6 @@ const COMMON_WEB_FILES = [
 ];
 const MOZCENTRAL_DIFF_FILE = "mozcentral.diff";
 
-const DIST_REPO_URL = "https://github.com/mozilla/pdfjs-dist";
-
 const CONFIG_FILE = "pdfjs.config";
 const config = JSON.parse(fs.readFileSync(CONFIG_FILE).toString());
 
@@ -101,7 +98,7 @@ const AUTOPREFIXER_CONFIG = {
 const BABEL_TARGETS = ENV_TARGETS.join(", ");
 
 const BABEL_PRESET_ENV_OPTS = Object.freeze({
-  corejs: "3.37.1",
+  corejs: "3.38.1",
   exclude: ["web.structured-clone"],
   shippedProposals: true,
   useBuiltIns: "usage",
@@ -204,6 +201,7 @@ function createWebpackAlias(defines) {
     "web-annotation_editor_params": "web/annotation_editor_params.js",
     "web-download_manager": "",
     "web-external_services": "",
+    "web-new_alt_text_manager": "web/new_alt_text_manager.js",
     "web-null_l10n": "",
     "web-pdf_attachment_viewer": "web/pdf_attachment_viewer.js",
     "web-pdf_cursor_tools": "web/pdf_cursor_tools.js",
@@ -284,9 +282,6 @@ function createWebpackConfig(
     BUNDLE_VERSION: versionInfo.version,
     BUNDLE_BUILD: versionInfo.commit,
     TESTING: defines.TESTING ?? process.env.TESTING === "true",
-    BROWSER_PREFERENCES: defaultPreferencesDir
-      ? getBrowserPreferences(defaultPreferencesDir)
-      : {},
     DEFAULT_PREFERENCES: defaultPreferencesDir
       ? getDefaultPreferences(defaultPreferencesDir)
       : {},
@@ -668,9 +663,8 @@ function getTempFile(prefix, suffix) {
   return filePath;
 }
 
-function createTestSource(testsName, { bot = false, xfaOnly = false } = {}) {
-  const source = stream.Readable({ objectMode: true });
-  source._read = function () {
+function runTests(testsName, { bot = false, xfaOnly = false } = {}) {
+  return new Promise((resolve, reject) => {
     console.log();
     console.log("### Running " + testsName + " tests");
 
@@ -704,14 +698,17 @@ function createTestSource(testsName, { bot = false, xfaOnly = false } = {}) {
         args.push("--integration");
         break;
       default:
-        this.emit("error", new Error("Unknown name: " + testsName));
-        return null;
+        reject(new Error(`Unknown tests name '${testsName}'`));
+        return;
     }
     if (bot) {
       args.push("--strictVerify");
     }
     if (process.argv.includes("--noChrome") || forceNoChrome) {
       args.push("--noChrome");
+    }
+    if (process.argv.includes("--noFirefox")) {
+      args.push("--noFirefox");
     }
     if (process.argv.includes("--headless")) {
       args.push("--headless");
@@ -720,13 +717,11 @@ function createTestSource(testsName, { bot = false, xfaOnly = false } = {}) {
     const testProcess = startNode(args, { cwd: TEST_DIR, stdio: "inherit" });
     testProcess.on("close", function (code) {
       if (code !== 0) {
-        throw new Error(`Running ${testsName} tests failed.`);
+        reject(new Error(`Running ${testsName} tests failed.`));
       }
-      source.push(null);
+      resolve();
     });
-    return undefined;
-  };
-  return source;
+  });
 }
 
 function makeRef(done, bot) {
@@ -746,6 +741,9 @@ function makeRef(done, bot) {
   }
   if (process.argv.includes("--noChrome") || forceNoChrome) {
     args.push("--noChrome");
+  }
+  if (process.argv.includes("--noFirefox")) {
+    args.push("--noFirefox");
   }
   if (process.argv.includes("--headless")) {
     args.push("--headless");
@@ -856,13 +854,6 @@ async function parseDefaultPreferences(dir) {
     "./" + DEFAULT_PREFERENCES_DIR + dir + "app_options.mjs"
   );
 
-  const browserPrefs = AppOptions.getAll(
-    OptionKind.BROWSER,
-    /* defaultOnly = */ true
-  );
-  if (Object.keys(browserPrefs).length === 0) {
-    throw new Error("No browser preferences found.");
-  }
   const prefs = AppOptions.getAll(
     OptionKind.PREFERENCE,
     /* defaultOnly = */ true
@@ -872,20 +863,9 @@ async function parseDefaultPreferences(dir) {
   }
 
   fs.writeFileSync(
-    DEFAULT_PREFERENCES_DIR + dir + "browser_preferences.json",
-    JSON.stringify(browserPrefs)
-  );
-  fs.writeFileSync(
     DEFAULT_PREFERENCES_DIR + dir + "default_preferences.json",
     JSON.stringify(prefs)
   );
-}
-
-function getBrowserPreferences(dir) {
-  const str = fs
-    .readFileSync(DEFAULT_PREFERENCES_DIR + dir + "browser_preferences.json")
-    .toString();
-  return JSON.parse(str);
 }
 
 function getDefaultPreferences(dir) {
@@ -1124,6 +1104,7 @@ function buildComponents(defines, dir) {
     "web/images/loading-icon.gif",
     "web/images/altText_*.svg",
     "web/images/editor-toolbar-*.svg",
+    "web/images/messageBar_*.svg",
     "web/images/toolbarButton-{editorHighlight,menuArrow}.svg",
     "web/images/cursor-*.svg",
   ];
@@ -1581,9 +1562,6 @@ function buildLib(defines, dir) {
     BUNDLE_VERSION: versionInfo.version,
     BUNDLE_BUILD: versionInfo.commit,
     TESTING: defines.TESTING ?? process.env.TESTING === "true",
-    BROWSER_PREFERENCES: getBrowserPreferences(
-      defines.SKIP_BABEL ? "lib/" : "lib-legacy/"
-    ),
     DEFAULT_PREFERENCES: getDefaultPreferences(
       defines.SKIP_BABEL ? "lib/" : "lib-legacy/"
     ),
@@ -1731,57 +1709,55 @@ function setTestEnv(done) {
 
 gulp.task(
   "test",
-  gulp.series(setTestEnv, "generic", "components", function runTest() {
-    return streamqueue(
-      { objectMode: true },
-      createTestSource("unit"),
-      createTestSource("browser"),
-      createTestSource("integration")
-    );
+  gulp.series(setTestEnv, "generic", "components", async function runTest() {
+    await runTests("unit");
+    await runTests("browser");
+    await runTests("integration");
   })
 );
 
 gulp.task(
   "bottest",
-  gulp.series(setTestEnv, "generic", "components", function runBotTest() {
-    return streamqueue(
-      { objectMode: true },
-      createTestSource("unit", { bot: true }),
-      createTestSource("browser", { bot: true }),
-      createTestSource("integration")
-    );
+  gulp.series(setTestEnv, "generic", "components", async function runBotTest() {
+    await runTests("unit", { bot: true });
+    await runTests("browser", { bot: true });
+    await runTests("integration");
   })
 );
 
 gulp.task(
   "xfatest",
-  gulp.series(setTestEnv, "generic", "components", function runXfaTest() {
-    return streamqueue(
-      { objectMode: true },
-      createTestSource("unit"),
-      createTestSource("browser", { xfaOnly: true }),
-      createTestSource("integration")
-    );
+  gulp.series(setTestEnv, "generic", "components", async function runXfaTest() {
+    await runTests("unit");
+    await runTests("browser", { xfaOnly: true });
+    await runTests("integration");
   })
 );
 
 gulp.task(
   "botxfatest",
-  gulp.series(setTestEnv, "generic", "components", function runBotXfaTest() {
-    return streamqueue(
-      { objectMode: true },
-      createTestSource("unit", { bot: true }),
-      createTestSource("browser", { bot: true, xfaOnly: true }),
-      createTestSource("integration")
-    );
-  })
+  gulp.series(
+    setTestEnv,
+    "generic",
+    "components",
+    async function runBotXfaTest() {
+      await runTests("unit", { bot: true });
+      await runTests("browser", { bot: true, xfaOnly: true });
+      await runTests("integration");
+    }
+  )
 );
 
 gulp.task(
   "browsertest",
-  gulp.series(setTestEnv, "generic", "components", function runBrowserTest() {
-    return createTestSource("browser");
-  })
+  gulp.series(
+    setTestEnv,
+    "generic",
+    "components",
+    async function runBrowserTest() {
+      await runTests("browser");
+    }
+  )
 );
 
 gulp.task(
@@ -1790,33 +1766,30 @@ gulp.task(
     setTestEnv,
     "generic",
     "components",
-    function runBotBrowserTest() {
-      return streamqueue(
-        { objectMode: true },
-        createTestSource("browser", { bot: true })
-      );
+    async function runBotBrowserTest() {
+      await runTests("browser", { bot: true });
     }
   )
 );
 
 gulp.task(
   "unittest",
-  gulp.series(setTestEnv, "generic", function runUnitTest() {
-    return createTestSource("unit");
+  gulp.series(setTestEnv, "generic", async function runUnitTest() {
+    await runTests("unit");
   })
 );
 
 gulp.task(
   "integrationtest",
-  gulp.series(setTestEnv, "generic", function runIntegrationTest() {
-    return createTestSource("integration");
+  gulp.series(setTestEnv, "generic", async function runIntegrationTest() {
+    await runTests("integration");
   })
 );
 
 gulp.task(
   "fonttest",
-  gulp.series(setTestEnv, function runFontTest() {
-    return createTestSource("font");
+  gulp.series(setTestEnv, async function runFontTest() {
+    await runTests("font");
   })
 );
 
@@ -1930,7 +1903,7 @@ gulp.task(
 
 gulp.task("lint", function (done) {
   console.log();
-  console.log("### Linting JS/CSS/JSON files");
+  console.log("### Linting JS/CSS/JSON/SVG files");
 
   // Ensure that we lint the Firefox specific *.jsm files too.
   const esLintOptions = [
@@ -1963,6 +1936,12 @@ gulp.task("lint", function (done) {
     prettierOptions.push("--log-level", "warn", "--check");
   }
 
+  const svgLintOptions = [
+    "node_modules/svglint/bin/cli.js",
+    "web/**/*.svg",
+    "--ci",
+  ];
+
   const esLintProcess = startNode(esLintOptions, { stdio: "inherit" });
   esLintProcess.on("close", function (esLintCode) {
     if (esLintCode !== 0) {
@@ -1983,8 +1962,24 @@ gulp.task("lint", function (done) {
           done(new Error("Prettier failed."));
           return;
         }
-        console.log("files checked, no errors found");
-        done();
+
+        const svgLintProcess = startNode(svgLintOptions, {
+          stdio: "pipe",
+        });
+        svgLintProcess.stdout.setEncoding("utf8");
+        svgLintProcess.stdout.on("data", m => {
+          m = m.toString().replace(/-+ Summary -+.*/ms, "");
+          console.log(m);
+        });
+        svgLintProcess.on("close", function (svgLintCode) {
+          if (svgLintCode !== 0) {
+            done(new Error("svglint failed."));
+            return;
+          }
+
+          console.log("files checked, no errors found");
+          done();
+        });
       });
     });
   });
@@ -2197,8 +2192,9 @@ function packageJson() {
   const DIST_NAME = "pdfjs-dist";
   const DIST_DESCRIPTION = "Generic build of Mozilla's PDF.js library.";
   const DIST_KEYWORDS = ["Mozilla", "pdf", "pdf.js"];
-  const DIST_HOMEPAGE = "http://mozilla.github.io/pdf.js/";
+  const DIST_HOMEPAGE = "https://mozilla.github.io/pdf.js/";
   const DIST_BUGS_URL = "https://github.com/mozilla/pdf.js/issues";
+  const DIST_GIT_URL = "https://github.com/mozilla/pdf.js.git";
   const DIST_LICENSE = "Apache-2.0";
 
   const npmManifest = {
@@ -2224,7 +2220,7 @@ function packageJson() {
     },
     repository: {
       type: "git",
-      url: `git+https://github.com/mozilla/pdf.js.git`,
+      url: `git+${DIST_GIT_URL}`,
     },
     engines: {
       node: ">=18",
@@ -2251,23 +2247,8 @@ gulp.task(
     "minified-legacy",
     "types",
     function createDist() {
-      console.log();
-      console.log("### Cloning baseline distribution");
-
       fs.rmSync(DIST_DIR, { recursive: true, force: true });
       fs.mkdirSync(DIST_DIR, { recursive: true });
-      safeSpawnSync("git", ["clone", "--depth", "1", DIST_REPO_URL, DIST_DIR]);
-
-      console.log();
-      console.log("### Overwriting all files");
-
-      // Remove all files/folders, except for `.git` because it needs to be a
-      // valid Git repository for the Git commands in the `dist` target to work.
-      for (const entry of fs.readdirSync(DIST_DIR)) {
-        if (entry !== ".git") {
-          fs.rmSync(DIST_DIR + entry, { recursive: true, force: true });
-        }
-      }
 
       return ordered([
         packageJson().pipe(gulp.dest(DIST_DIR)),
