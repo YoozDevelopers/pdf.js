@@ -56,17 +56,21 @@ import {
 } from "pdfjs-lib";
 import { AppOptions, OptionKind } from "./app_options.js";
 import { EventBus, FirefoxEventBus } from "./event_utils.js";
-import { ExternalServices, initCom, MLManager } from "web-external_services";
+import {
+  ExternalServices,
+  initCom,
+  MLManager,
+  Preferences,
+} from "./genericcom.js";
 import {
   ImageAltTextSettings,
   NewAltTextManager,
-} from "web-new_alt_text_manager";
+} from "./new_alt_text_manager.js";
 import { LinkTarget, PDFLinkService } from "./pdf_link_service.js";
+import { AltTextManager } from "./alt_text_manager.js";
 import { AnnotationEditorParams } from "./annotation_editor_params.js";
-import { AltTextManager } from "web-alt_text_manager";
-import { AnnotationEditorParams } from "web-annotation_editor_params";
 import { CaretBrowsingMode } from "./caret_browsing.js";
-import { DownloadManager } from "web-download_manager";
+import { DownloadManager } from "./download_manager.js";
 import { OverlayManager } from "./overlay_manager.js";
 import { PasswordPrompt } from "./password_prompt.js";
 import { PDFAttachmentViewer } from "./pdf_attachment_viewer.js";
@@ -78,10 +82,7 @@ import { PDFHistory } from "./pdf_history.js";
 import { PDFLayerViewer } from "./pdf_layer_viewer.js";
 import { PDFOutlineViewer } from "./pdf_outline_viewer.js";
 import { PDFPresentationMode } from "./pdf_presentation_mode.js";
-import { PDFLayerViewer } from "web-pdf_layer_viewer";
-import { PDFOutlineViewer } from "web-pdf_outline_viewer";
-import { PDFPresentationMode } from "web-pdf_presentation_mode";
-import { PDFPrintServiceFactory } from "web-print_service";
+import { PDFPrintServiceFactory } from "./pdf_print_service.js";
 import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
 import { PDFScriptingManager } from "./pdf_scripting_manager.js";
 import { PDFSidebar } from "./pdf_sidebar.js";
@@ -89,9 +90,6 @@ import { PDFThumbnailViewer } from "./pdf_thumbnail_viewer.js";
 import { PDFViewer } from "./pdf_viewer.js";
 import { SecondaryToolbar } from "./secondary_toolbar.js";
 import { Toolbar } from "./toolbar.js";
-import { Preferences } from "web-preferences";
-import { SecondaryToolbar } from "web-secondary_toolbar";
-import { Toolbar } from "web-toolbar";
 import { ViewHistory } from "./view_history.js";
 
 const FORCE_PAGES_LOADED_TIMEOUT = 10000; // ms
@@ -278,15 +276,15 @@ const PDFViewerApplication = {
       params = parseQueryString(hash);
 
     const loadPDFBug = async () => {
-      if (this._PDFBug) {
-        return;
-      }
-      const { PDFBug } =
-        typeof PDFJSDev === "undefined"
-          ? await import(AppOptions.get("debuggerSrc")) // eslint-disable-line no-unsanitized/method
-          : await __non_webpack_import__(AppOptions.get("debuggerSrc"));
-
-      this._PDFBug = PDFBug;
+      // if (this._PDFBug) {
+      //   return;
+      // }
+      // const { PDFBug } =
+      //   typeof PDFJSDev === "undefined"
+      //     ? await import(AppOptions.get("debuggerSrc")) // eslint-disable-line no-unsanitized/method
+      //     : await __non_webpack_import__(AppOptions.get("debuggerSrc"));
+      //
+      // this._PDFBug = PDFBug;
     };
 
     // Parameters that need to be handled manually.
@@ -780,7 +778,7 @@ const PDFViewerApplication = {
     if (typeof PDFJSDev === "undefined" || PDFJSDev.test("GENERIC")) {
       if (file) {
         // MODIF - en laissant { url: file } la librairie crash car PDF.JS essaye d'obtenir un titre à partir d'un ArrayBuffer.
-        PDFViewerApplication.open({ data: file });
+        this.open({ data: this.url, filename: file });
       } else {
         this._hideViewBookmark();
       }
@@ -1990,6 +1988,8 @@ const PDFViewerApplication = {
     );
     eventBus._on("rotatecw", this.rotatePages.bind(this, 90), { signal });
     eventBus._on("rotateccw", this.rotatePages.bind(this, -90), { signal });
+    eventBus._on("rotatepagecw", this.rotatePage.bind(this, 90), { signal });
+    eventBus._on("rotatepageccw", this.rotatePage.bind(this, -90), { signal });
     eventBus._on(
       "optionalcontentconfig",
       evt => (pdfViewer.optionalContentConfigPromise = evt.promise),
@@ -2028,37 +2028,6 @@ const PDFViewerApplication = {
       onUpdateFindControlState.bind(this),
       { signal }
     );
-    eventBus._on("print", webViewerPrint, { signal });
-    eventBus._on("download", webViewerDownload, { signal });
-    eventBus._on("firstpage", webViewerFirstPage, { signal });
-    eventBus._on("lastpage", webViewerLastPage, { signal });
-    eventBus._on("nextpage", webViewerNextPage, { signal });
-    eventBus._on("previouspage", webViewerPreviousPage, { signal });
-    eventBus._on("zoomin", webViewerZoomIn, { signal });
-    eventBus._on("zoomout", webViewerZoomOut, { signal });
-    eventBus._on("zoomreset", webViewerZoomReset, { signal });
-    eventBus._on("pagenumberchanged", webViewerPageNumberChanged, { signal });
-    eventBus._on("scalechanged", webViewerScaleChanged, { signal });
-    eventBus._on("rotatecw", webViewerRotateCw, { signal });
-    eventBus._on("rotateccw", webViewerRotateCcw, { signal });
-    // MODIF - add listeners for page rotation in next 2 lines
-    eventBus._on("rotatepagecw", webViewerRotatePageCw, { signal });
-    eventBus._on("rotatepageccw", webViewerRotatePageCcw, { signal });
-    eventBus._on("optionalcontentconfig", webViewerOptionalContentConfig, {
-      signal,
-    });
-    eventBus._on("switchscrollmode", webViewerSwitchScrollMode, { signal });
-    eventBus._on("scrollmodechanged", webViewerScrollModeChanged, { signal });
-    eventBus._on("switchspreadmode", webViewerSwitchSpreadMode, { signal });
-    eventBus._on("spreadmodechanged", webViewerSpreadModeChanged, { signal });
-    eventBus._on("documentproperties", webViewerDocumentProperties, { signal });
-    eventBus._on("findfromurlhash", webViewerFindFromUrlHash, { signal });
-    eventBus._on("updatefindmatchescount", webViewerUpdateFindMatchesCount, {
-      signal,
-    });
-    eventBus._on("updatefindcontrolstate", webViewerUpdateFindControlState, {
-      signal,
-    });
 
     if (typeof PDFJSDev === "undefined" || PDFJSDev.test("GENERIC")) {
       eventBus._on("fileinputchange", onFileInputChange.bind(this), { signal });

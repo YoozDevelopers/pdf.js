@@ -466,6 +466,7 @@ class XRef {
     this._cacheMap.clear();
 
     const stream = this.stream;
+    console.log("Stream", this.stream);
     stream.pos = 0;
     const buffer = stream.getBytes(),
       bufferStr = bytesToString(buffer),

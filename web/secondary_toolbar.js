@@ -229,21 +229,25 @@ class SecondaryToolbar {
 
     // All items within the secondary toolbar.
     for (const { element, eventName, close, eventDetails } of buttons) {
-      element.addEventListener("click", evt => {
-        if (eventName !== null) {
-          eventBus.dispatch(eventName, { source: this, ...eventDetails });
-        }
-        if (close) {
-          this.close();
-        }
-        eventBus.dispatch("reporttelemetry", {
-          source: this,
-          details: {
-            type: "buttons",
-            data: { id: element.id },
-          },
+      if (!element) {
+        console.log(element, eventName, close, eventDetails);
+      } else {
+        element.addEventListener("click", evt => {
+          if (eventName !== null) {
+            eventBus.dispatch(eventName, { source: this, ...eventDetails });
+          }
+          if (close) {
+            this.close();
+          }
+          eventBus.dispatch("reporttelemetry", {
+            source: this,
+            details: {
+              type: "buttons",
+              data: { id: element.id },
+            },
+          });
         });
-      });
+      }
     }
 
     eventBus._on("cursortoolchanged", this.#cursorToolChanged.bind(this));

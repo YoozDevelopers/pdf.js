@@ -25,7 +25,7 @@
 /** @typedef {import("../src/display/annotation_layer.js").AnnotationLayer} AnnotationLayer */
 
 import { AnnotationEditorLayer } from "pdfjs-lib";
-import { GenericL10n } from "web-null_l10n";
+import { GenericL10n } from "./genericl10n.js";
 
 /**
  * @typedef {Object} AnnotationEditorLayerBuilderOptions

@@ -448,6 +448,10 @@ const defaultOptions = {
           : "../build/pdf.worker.mjs",
     kind: OptionKind.WORKER,
   },
+  customConfig: {
+    value: null,
+    kind: OptionKind.BROWSER,
+  },
 };
 if (typeof PDFJSDev === "undefined" || !PDFJSDev.test("MOZCENTRAL")) {
   defaultOptions.defaultUrl = {

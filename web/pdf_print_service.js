@@ -209,7 +209,7 @@ class PDFPrintService {
         // Avoid "Uncaught promise" messages in the console.
       })
       .then(() => {
-        URL.revokeObjectURL(img.src);
+        // URL.revokeObjectURL(img.src);
       });
     return promise;
   }
@@ -283,6 +283,7 @@ class PDFPrintService {
 
 const print = window.print;
 window.print = function () {
+  console.log("Print with pdfjs function");
   if (activeService) {
     console.warn("Ignored window.print() because of a pending print job.");
     return;
