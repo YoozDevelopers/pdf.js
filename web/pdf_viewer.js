@@ -1401,8 +1401,8 @@ class PDFViewer {
       this.#setScaleUpdatePages(
         scale,
         value,
-        options,
-        fromScaleChangingButtons
+        fromScaleChangingButtons,
+        options
       );
     } else {
       const currentPage = this._pages[this._currentPageNumber - 1];
@@ -1466,8 +1466,8 @@ class PDFViewer {
       this.#setScaleUpdatePages(
         scale,
         value,
-        options,
-        fromScaleChangingButtons
+        fromScaleChangingButtons,
+        options
       );
     }
   }

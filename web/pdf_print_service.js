@@ -282,7 +282,7 @@ class PDFPrintService {
 }
 
 const print = window.print;
-window.print = function () {
+window.printPdfViewer = function () {
   console.log("Print with pdfjs function");
   if (activeService) {
     console.warn("Ignored window.print() because of a pending print job.");
