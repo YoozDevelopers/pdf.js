@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-import { noContextMenu } from "../display_utils.js";
+import { noContextMenu, stopEvent } from "../display_utils.js";
 
 class EditorToolbar {
   #toolbar = null;
@@ -41,7 +41,7 @@ class EditorToolbar {
 
   render() {
     const editToolbar = (this.#toolbar = document.createElement("div"));
-    editToolbar.className = "editToolbar";
+    editToolbar.classList.add("editToolbar", "hidden");
     editToolbar.setAttribute("role", "toolbar");
     const signal = this.#editor._uiManager._signal;
     editToolbar.addEventListener("contextmenu", noContextMenu, { signal });
@@ -71,20 +71,22 @@ class EditorToolbar {
     return editToolbar;
   }
 
+  get div() {
+    return this.#toolbar;
+  }
+
   static #pointerDown(e) {
     e.stopPropagation();
   }
 
   #focusIn(e) {
     this.#editor._focusEventsAllowed = false;
-    e.preventDefault();
-    e.stopPropagation();
+    stopEvent(e);
   }
 
   #focusOut(e) {
     this.#editor._focusEventsAllowed = true;
-    e.preventDefault();
-    e.stopPropagation();
+    stopEvent(e);
   }
 
   #addListenersToElement(element) {

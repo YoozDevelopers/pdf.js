@@ -112,12 +112,13 @@ class PDFDocumentProperties {
     }
 
     // Get the document properties.
-    const {
-      info,
-      /* metadata, */
-      /* contentDispositionFilename, */
-      contentLength,
-    } = await this.pdfDocument.getMetadata();
+    const [
+      { info, /* metadata, contentDispositionFilename, */ contentLength },
+      pdfPage,
+    ] = await Promise.all([
+      this.pdfDocument.getMetadata(),
+      this.pdfDocument.getPage(currentPageNumber),
+    ]);
 
     const [
       fileName,
@@ -131,10 +132,7 @@ class PDFDocumentProperties {
       this.#parseFileSize(contentLength),
       this.#parseDate(info.CreationDate),
       this.#parseDate(info.ModDate),
-      // eslint-disable-next-line arrow-body-style
-      this.pdfDocument.getPage(currentPageNumber).then(pdfPage => {
-        return this.#parsePageSize(getPageSizeInches(pdfPage), pagesRotation);
-      }),
+      this.#parsePageSize(getPageSizeInches(pdfPage), pagesRotation),
       this.#parseLinearization(info.IsLinearized),
     ]);
 
@@ -330,7 +328,9 @@ class PDFDocumentProperties {
   async #parseDate(inputDate) {
     const dateObj = PDFDateString.toDateObject(inputDate);
     return dateObj
-      ? this.l10n.get("pdfjs-document-properties-date-time-string", { dateObj })
+      ? this.l10n.get("pdfjs-document-properties-date-time-string", {
+          dateObj: dateObj.valueOf(),
+        })
       : undefined;
   }
 

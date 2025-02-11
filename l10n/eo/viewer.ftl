@@ -105,6 +105,14 @@ pdfjs-document-properties-button-label = Atributoj de dokumento…
 pdfjs-document-properties-file-name = Nomo de dosiero:
 pdfjs-document-properties-file-size = Grando de dosiero:
 # Variables:
+#   $kb (Number) - the PDF file size in kilobytes
+#   $b (Number) - the PDF file size in bytes
+pdfjs-document-properties-size-kb = { NUMBER($kb, maximumSignificantDigits: 3) } KO ({ $b } oktetoj)
+# Variables:
+#   $mb (Number) - the PDF file size in megabytes
+#   $b (Number) - the PDF file size in bytes
+pdfjs-document-properties-size-mb = { NUMBER($mb, maximumSignificantDigits: 3) } Mo ({ $b } oktetoj)
+# Variables:
 #   $size_kb (Number) - the PDF file size in kilobytes
 #   $size_b (Number) - the PDF file size in bytes
 pdfjs-document-properties-kb = { $size_kb } KO ({ $size_b } oktetoj)
@@ -118,6 +126,9 @@ pdfjs-document-properties-subject = Temo:
 pdfjs-document-properties-keywords = Ŝlosilvorto:
 pdfjs-document-properties-creation-date = Dato de kreado:
 pdfjs-document-properties-modification-date = Dato de modifo:
+# Variables:
+#   $dateObj (Date) - the creation/modification date and time of the PDF file
+pdfjs-document-properties-date-time-string = { DATETIME($dateObj, dateStyle: "short", timeStyle: "medium") }
 # Variables:
 #   $date (Date) - the creation/modification date of the PDF file
 #   $time (Time) - the creation/modification time of the PDF file
@@ -275,6 +286,9 @@ pdfjs-annotation-date-string = { $date }, { $time }
 # Some common types are e.g.: "Check", "Text", "Comment", "Note"
 pdfjs-text-annotation-type =
     .alt = [Prinoto: { $type }]
+# Variables:
+#   $dateObj (Date) - the modification date and time of the annotation
+pdfjs-annotation-date-time-string = { DATETIME($dateObj, dateStyle: "short", timeStyle: "medium") }
 
 ## Password
 
@@ -329,8 +343,12 @@ pdfjs-editor-stamp-add-image-button-label = Aldoni bildon
 pdfjs-editor-free-highlight-thickness-input = Dikeco
 pdfjs-editor-free-highlight-thickness-title =
     .title = Ŝanĝi dikecon dum elstarigo de netekstaj elementoj
+# .default-content is used as a placeholder in an empty text editor.
+pdfjs-free-text2 =
+    .aria-label = Teksta redaktilo
+    .default-content = Komencu tajpi…
 pdfjs-free-text =
-    .aria-label = Tekstan redaktilon
+    .aria-label = Teksta redaktilo
 pdfjs-free-text-default-content = Ektajpi…
 pdfjs-ink =
     .aria-label = Desegnan redaktilon
@@ -339,8 +357,9 @@ pdfjs-ink-canvas =
 
 ## Alt-text dialog
 
-# Alternative text (alt text) helps when people can't see the image.
 pdfjs-editor-alt-text-button-label = Alternativa teksto
+pdfjs-editor-alt-text-edit-button =
+    .aria-label = Redakti alternativan tekston
 pdfjs-editor-alt-text-edit-button-label = Redakti alternativan tekston
 pdfjs-editor-alt-text-dialog-label = Elektu eblon
 pdfjs-editor-alt-text-dialog-description = Alternativa teksto helpas personojn, en la okazoj kiam ili ne povas vidi aŭ ŝargi la bildon.
@@ -354,6 +373,9 @@ pdfjs-editor-alt-text-decorative-tooltip = Markita kiel ornama
 # .placeholder: This is a placeholder for the alt text input area
 pdfjs-editor-alt-text-textarea =
     .placeholder = Ekzemple: “Juna persono sidiĝas ĉetable por ekmanĝi”
+# Alternative text (alt text) helps when people can't see the image.
+pdfjs-editor-alt-text-button =
+    .aria-label = Alternativa teksto
 
 ## Editor resizers
 ## This is used in an aria label to help to understand the role of the resizer.
@@ -366,6 +388,22 @@ pdfjs-editor-resizer-label-bottom-right = Malsupra deksta angulo — ŝanĝi gra
 pdfjs-editor-resizer-label-bottom-middle = Malsupra mezo — ŝanĝi grandon
 pdfjs-editor-resizer-label-bottom-left = Malsupra maldekstra angulo — ŝanĝi grandon
 pdfjs-editor-resizer-label-middle-left = Maldekstra mezo — ŝanĝi grandon
+pdfjs-editor-resizer-top-left =
+    .aria-label = Supra maldekstra angulo — ŝangi grandon
+pdfjs-editor-resizer-top-middle =
+    .aria-label = Supra mezo — ŝanĝi grandon
+pdfjs-editor-resizer-top-right =
+    .aria-label = Supran dekstran angulon — ŝanĝi grandon
+pdfjs-editor-resizer-middle-right =
+    .aria-label = Dekstra mezo — ŝanĝi grandon
+pdfjs-editor-resizer-bottom-right =
+    .aria-label = Malsupra deksta angulo — ŝanĝi grandon
+pdfjs-editor-resizer-bottom-middle =
+    .aria-label = Malsupra mezo — ŝanĝi grandon
+pdfjs-editor-resizer-bottom-left =
+    .aria-label = Malsupra maldekstra angulo — ŝanĝi grandon
+pdfjs-editor-resizer-middle-left =
+    .aria-label = Maldekstra mezo — ŝanĝi grandon
 
 ## Color picker
 
@@ -419,10 +457,16 @@ pdfjs-editor-new-alt-text-error-close-button = Fermi
 pdfjs-editor-new-alt-text-ai-model-downloading-progress = Elŝuto de modelo de artefarita intelekto por alternativa teksto ({ $downloadedSize } el { $totalSize } MO)
     .aria-valuetext = Elŝuto de modelo de artefarita intelekto por alternativa teksto ({ $downloadedSize } el { $totalSize } MO)
 # This is a button that users can click to edit the alt text they have already added.
+pdfjs-editor-new-alt-text-added-button =
+    .aria-label = Alternativa teksto aldonita
 pdfjs-editor-new-alt-text-added-button-label = Alternativa teksto aldonita
 # This is a button that users can click to open the alt text editor and add alt text when it is not present.
+pdfjs-editor-new-alt-text-missing-button =
+    .aria-label = Mankas alternativa teksto
 pdfjs-editor-new-alt-text-missing-button-label = Mankas alternativa teksto
 # This is a button that opens up the alt text modal where users should review the alt text that was automatically generated.
+pdfjs-editor-new-alt-text-to-review-button =
+    .aria-label = Kontroli alternativan tekston
 pdfjs-editor-new-alt-text-to-review-button-label = Kontroli alternativan tekston
 # "Created automatically" is a prefix that will be added to the beginning of any alt text that has been automatically generated. After the colon, the user will see/hear the actual alt text description. If the alt text has been edited by a human, this prefix will not appear.
 # Variables:
@@ -449,3 +493,23 @@ pdfjs-editor-alt-text-settings-editor-title = Redaktilo de alternativa teksto
 pdfjs-editor-alt-text-settings-show-dialog-button-label = Montri redaktilon de alternativa teksto tuj post aldono de bildo
 pdfjs-editor-alt-text-settings-show-dialog-description = Tio ĉi helpas vin kontroli ĉu ĉiuj bildoj havas alternativan tekston.
 pdfjs-editor-alt-text-settings-close-button = Fermi
+
+## "Annotations removed" bar
+
+pdfjs-editor-undo-bar-message-highlight = Elstaraĵo forigita
+pdfjs-editor-undo-bar-message-freetext = Teksto forigita
+pdfjs-editor-undo-bar-message-ink = Desegno forigita
+pdfjs-editor-undo-bar-message-stamp = Bildo forigita
+# Variables:
+#   $count (Number) - the number of removed annotations.
+pdfjs-editor-undo-bar-message-multiple =
+    { $count ->
+        [one] unu prinoto forigita
+       *[other] { $count } prinotoj forigitaj
+    }
+pdfjs-editor-undo-bar-undo-button =
+    .title = Malfari
+pdfjs-editor-undo-bar-undo-button-label = Malfari
+pdfjs-editor-undo-bar-close-button =
+    .title = Fermi
+pdfjs-editor-undo-bar-close-button-label = Fermi

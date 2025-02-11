@@ -335,6 +335,10 @@ pdfjs-editor-stamp-add-image-button-label = Thêm hình ảnh
 pdfjs-editor-free-highlight-thickness-input = Độ dày
 pdfjs-editor-free-highlight-thickness-title =
     .title = Thay đổi độ dày khi đánh dấu các mục không phải là văn bản
+# .default-content is used as a placeholder in an empty text editor.
+pdfjs-free-text2 =
+    .aria-label = Trình chỉnh sửa văn bản
+    .default-content = Bắt đầu nhập…
 pdfjs-free-text =
     .aria-label = Trình sửa văn bản
 pdfjs-free-text-default-content = Bắt đầu nhập…
@@ -345,8 +349,9 @@ pdfjs-ink-canvas =
 
 ## Alt-text dialog
 
-# Alternative text (alt text) helps when people can't see the image.
 pdfjs-editor-alt-text-button-label = Văn bản thay thế
+pdfjs-editor-alt-text-edit-button =
+    .aria-label = Chỉnh sửa văn bản thay thế
 pdfjs-editor-alt-text-edit-button-label = Chỉnh sửa văn bản thay thế
 pdfjs-editor-alt-text-dialog-label = Chọn một lựa chọn
 pdfjs-editor-alt-text-dialog-description = Văn bản thay thế sẽ hữu ích khi mọi người không thể thấy hình ảnh hoặc khi hình ảnh không tải.
@@ -360,6 +365,9 @@ pdfjs-editor-alt-text-decorative-tooltip = Đã đánh dấu là trang trí
 # .placeholder: This is a placeholder for the alt text input area
 pdfjs-editor-alt-text-textarea =
     .placeholder = Ví dụ: “Một thanh niên ngồi xuống bàn để thưởng thức một bữa ăn”
+# Alternative text (alt text) helps when people can't see the image.
+pdfjs-editor-alt-text-button =
+    .aria-label = Văn bản thay thế
 
 ## Editor resizers
 ## This is used in an aria label to help to understand the role of the resizer.
@@ -372,6 +380,22 @@ pdfjs-editor-resizer-label-bottom-right = Dưới cùng bên phải — thay đ�
 pdfjs-editor-resizer-label-bottom-middle = Ở giữa dưới cùng — thay đổi kích thước
 pdfjs-editor-resizer-label-bottom-left = Góc dưới bên trái — thay đổi kích thước
 pdfjs-editor-resizer-label-middle-left = Ở giữa bên trái — thay đổi kích thước
+pdfjs-editor-resizer-top-left =
+    .aria-label = Trên cùng bên trái — thay đổi kích thước
+pdfjs-editor-resizer-top-middle =
+    .aria-label = Trên cùng ở giữa — thay đổi kích thước
+pdfjs-editor-resizer-top-right =
+    .aria-label = Trên cùng bên phải — thay đổi kích thước
+pdfjs-editor-resizer-middle-right =
+    .aria-label = Ở giữa bên phải — thay đổi kích thước
+pdfjs-editor-resizer-bottom-right =
+    .aria-label = Dưới cùng bên phải — thay đổi kích thước
+pdfjs-editor-resizer-bottom-middle =
+    .aria-label = Ở giữa dưới cùng — thay đổi kích thước
+pdfjs-editor-resizer-bottom-left =
+    .aria-label = Góc dưới bên trái — thay đổi kích thước
+pdfjs-editor-resizer-middle-left =
+    .aria-label = Ở giữa bên trái — thay đổi kích thước
 
 ## Color picker
 
@@ -425,10 +449,16 @@ pdfjs-editor-new-alt-text-error-close-button = Đóng
 pdfjs-editor-new-alt-text-ai-model-downloading-progress = Đang tải xuống mô hình AI văn bản thay thế ({ $downloadedSize } trong số { $totalSize } MB)
     .aria-valuetext = Đang tải xuống mô hình AI văn bản thay thế ({ $downloadedSize } trong số { $totalSize } MB)
 # This is a button that users can click to edit the alt text they have already added.
+pdfjs-editor-new-alt-text-added-button =
+    .aria-label = Đã thêm văn bản thay thế
 pdfjs-editor-new-alt-text-added-button-label = Đã thêm văn bản thay thế
 # This is a button that users can click to open the alt text editor and add alt text when it is not present.
+pdfjs-editor-new-alt-text-missing-button =
+    .aria-label = Thiếu văn bản thay thế
 pdfjs-editor-new-alt-text-missing-button-label = Thiếu văn bản thay thế
 # This is a button that opens up the alt text modal where users should review the alt text that was automatically generated.
+pdfjs-editor-new-alt-text-to-review-button =
+    .aria-label = Xem lại văn bản thay thế
 pdfjs-editor-new-alt-text-to-review-button-label = Xem lại văn bản thay thế
 # "Created automatically" is a prefix that will be added to the beginning of any alt text that has been automatically generated. After the colon, the user will see/hear the actual alt text description. If the alt text has been edited by a human, this prefix will not appear.
 # Variables:
@@ -455,3 +485,19 @@ pdfjs-editor-alt-text-settings-editor-title = Trình soạn thảo văn bản th
 pdfjs-editor-alt-text-settings-show-dialog-button-label = Hiển thị ngay trình soạn thảo văn bản thay thế khi thêm hình ảnh
 pdfjs-editor-alt-text-settings-show-dialog-description = Giúp bạn đảm bảo tất cả hình ảnh của bạn đều có văn bản thay thế.
 pdfjs-editor-alt-text-settings-close-button = Đóng
+
+## "Annotations removed" bar
+
+pdfjs-editor-undo-bar-message-highlight = Đã xóa đánh dấu
+pdfjs-editor-undo-bar-message-freetext = Đã xóa văn bản
+pdfjs-editor-undo-bar-message-ink = Đã xóa bản vẽ
+pdfjs-editor-undo-bar-message-stamp = Đã xóa hình ảnh
+# Variables:
+#   $count (Number) - the number of removed annotations.
+pdfjs-editor-undo-bar-message-multiple = { $count } chú thích đã bị xóa
+pdfjs-editor-undo-bar-undo-button =
+    .title = Hoàn tác
+pdfjs-editor-undo-bar-undo-button-label = Hoàn tác
+pdfjs-editor-undo-bar-close-button =
+    .title = Đóng
+pdfjs-editor-undo-bar-close-button-label = Đóng
