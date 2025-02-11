@@ -18,9 +18,6 @@ const loadingTask = getDocument(pdfPath);
 loadingTask.promise
   .then(function (doc) {
     const numPages = doc.numPages;
-    console.log("# Document Loaded");
-    console.log("Number of Pages: " + numPages);
-    console.log();
 
     let lastPromise; // will be used to chain promises
     lastPromise = doc.getMetadata().then(function (data) {

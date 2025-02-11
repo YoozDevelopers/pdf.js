@@ -50,6 +50,7 @@ import { TextAccessibilityManager } from "./text_accessibility.js";
 import { TextHighlighter } from "./text_highlighter.js";
 import { TextLayerBuilder } from "./text_layer_builder.js";
 import { XfaLayerBuilder } from "./xfa_layer_builder.js";
+import { WordLayer } from "../../src/layers/word_layer.ts";
 
 /**
  * @typedef {Object} PDFPageViewOptions
@@ -103,10 +104,11 @@ const DEFAULT_LAYER_PROPERTIES =
 
 const LAYERS_ORDER = new Map([
   ["canvasWrapper", 0],
-  ["textLayer", 1],
-  ["annotationLayer", 2],
-  ["annotationEditorLayer", 3],
-  ["xfaLayer", 3],
+  ["wordLayer", 1],
+  ["textLayer", 2],
+  ["annotationLayer", 3],
+  ["annotationEditorLayer", 4],
+  ["xfaLayer", 4],
 ]);
 
 /**
@@ -195,9 +197,9 @@ class PDFPageView {
     this.zoomLayer = null;
     // MODIF - adding new variables for wordLayer in next 5 lines
     this.wordLayer = null;
-    this.wordLayerResolve = null;
-    this.wordLayerPromise = new Promise((resolve, reject) => {
-      this.wordLayerResolve = resolve;
+    this.wordLayerHasRenderedResolve = null;
+    this.wordLayerHasRenderedPromise = new Promise((resolve, reject) => {
+      this.wordLayerHasRenderedResolve = resolve;
     });
     this.xfaLayer = null;
     this.structTreeLayer = null;
@@ -970,24 +972,25 @@ class PDFPageView {
     if (!this.wordLayer) {
       const textContent = await pdfPage.getTextContent();
       const style = window.getComputedStyle(this.div);
-      this.wordLayer = this.baseViewer.createWordLayerBuilder(
-        style.width,
-        style.height,
-        this.id - 1,
-        this.viewport,
-        textContent
-      );
-      this.wordLayerResolve(true);
-
-      this.wordLayer.onAppend = wordLayerDiv => {
-        this.l10n.pause();
-        wordLayerDiv.style.width = this.div.style.width;
-        wordLayerDiv.style.height = this.div.style.height;
-        this.wordLayer.parentHeight = this.div.style.height;
-        this.wordLayer.parentWidth = this.div.style.width;
-        this.div.append(wordLayerDiv);
-        this.l10n.resume();
-      };
+      const { linkService } = this.#layerProperties;
+      this.wordLayer = new WordLayer({
+        parentWidth: style.width,
+        parentHeight: style.height,
+        viewport,
+        pageIndex: this.id - 1,
+        findController: this.baseViewer.isInPresentationMode
+          ? null
+          : this.baseViewer.findController,
+        textContent,
+        linkService,
+        pageView: this,
+        cursorTools: this.baseViewer.cursorTools,
+        config: this.baseViewer.customConfig,
+        viewer: this.baseViewer.customViewer,
+        onAppend: wordLayerDiv => {
+          this.#addLayer(wordLayerDiv, "wordLayer");
+        },
+      });
     }
 
     if (
@@ -1127,6 +1130,7 @@ class PDFPageView {
 
         if (this.wordLayer) {
           await this.#renderWordLayer();
+          this.wordLayerHasRenderedResolve(true);
         }
 
         const { annotationEditorUIManager } = this.#layerProperties;

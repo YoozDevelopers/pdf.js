@@ -13,13 +13,14 @@
  * limitations under the License.
  */
 
+import "./pdf.scripting.js";
 import ModuleLoader from "../external/quickjs/quickjs-eval.js";
 import { SandboxSupportBase } from "./pdf.sandbox.external.js";
 
-/* eslint-disable-next-line no-unused-vars */
-const pdfjsVersion = PDFJSDev.eval("BUNDLE_VERSION");
-/* eslint-disable-next-line no-unused-vars */
-const pdfjsBuild = PDFJSDev.eval("BUNDLE_BUILD");
+// /* eslint-disable-next-line no-unused-vars */
+// const pdfjsVersion = PDFJSDev.eval("BUNDLE_VERSION");
+// /* eslint-disable-next-line no-unused-vars */
+// const pdfjsBuild = PDFJSDev.eval("BUNDLE_BUILD");
 
 class SandboxSupport extends SandboxSupportBase {
   exportValueToSandbox(val) {
@@ -55,12 +56,16 @@ class Sandbox {
   }
 
   create(data) {
-    if (PDFJSDev.test("TESTING")) {
-      this._module.ccall("nukeSandbox", null, []);
-    }
-    const code = [PDFJSDev.eval("PDF_SCRIPTING_JS_SOURCE")];
+    // if (PDFJSDev.test("TESTING")) {
+    //   this._module.ccall("nukeSandbox", null, []);
+    // }
+    const code = [
+      typeof PDFJSDev !== "undefined"
+        ? PDFJSDev.eval("PDF_SCRIPTING_JS_SOURCE")
+        : "",
+    ];
 
-    if (PDFJSDev.test("TESTING")) {
+    if (typeof PDFJSDev !== "undefined" && PDFJSDev?.test("TESTING")) {
       code.push(
         `globalThis.sendResultForTesting = callExternalFunction.bind(null, "send");`
       );
@@ -120,23 +125,23 @@ class Sandbox {
   }
 
   evalForTesting(code, key) {
-    if (PDFJSDev.test("TESTING")) {
-      this._module.ccall(
-        "evalInSandbox",
-        null,
-        ["string", "int"],
-        [
-          `try {
-             sendResultForTesting([{ id: "${key}", result: ${code} }]);
-          } catch (error) {
-             sendResultForTesting([{ id: "${key}", result: error.message }]);
-          }`,
-          this._alertOnError,
-        ]
-      );
-    } else {
-      throw new Error("Not implemented: evalForTesting");
-    }
+    // if (PDFJSDev.test("TESTING")) {
+    //   this._module.ccall(
+    //     "evalInSandbox",
+    //     null,
+    //     ["string", "int"],
+    //     [
+    //       `try {
+    //          sendResultForTesting([{ id: "${key}", result: ${code} }]);
+    //       } catch (error) {
+    //          sendResultForTesting([{ id: "${key}", result: error.message }]);
+    //       }`,
+    //       this._alertOnError,
+    //     ]
+    //   );
+    // } else {
+    throw new Error("Not implemented: evalForTesting");
+    // }
   }
 }
 

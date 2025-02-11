@@ -24,4 +24,4 @@ const pdfjsBuild =
 
 // To avoid problems with `export` statements in the QuickJS Javascript Engine,
 // we manually expose `pdfjsScripting` globally instead.
-globalThis.pdfjsScripting = { initSandbox };
+const pdfjsScripting = { initSandbox };

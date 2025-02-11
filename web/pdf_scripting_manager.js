@@ -177,18 +177,18 @@ class PDFScriptingManager {
         return; // The document was closed while the properties resolved.
       }
 
-      await this.#scripting.createSandbox({
-        objects,
-        calculationOrder,
-        appInfo: {
-          platform: navigator.platform,
-          language: navigator.language,
-        },
-        docInfo: {
-          ...docProperties,
-          actions: docActions,
-        },
-      });
+      // await this.#scripting.createSandbox({
+      //   objects,
+      //   calculationOrder,
+      //   appInfo: {
+      //     platform: navigator.platform,
+      //     language: navigator.language,
+      //   },
+      //   docInfo: {
+      //     ...docProperties,
+      //     actions: docActions,
+      //   },
+      // });
 
       eventBus.dispatch("sandboxcreated", { source: this });
     } catch (error) {
