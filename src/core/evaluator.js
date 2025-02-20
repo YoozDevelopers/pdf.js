@@ -4228,8 +4228,8 @@ class PartialEvaluator {
           hash.update(widthsBuf.join());
         }
 
-        const cidToGidMap = console.log("getRaw evaluator");
-        dict.getRaw("CIDToGIDMap") || baseDict.getRaw("CIDToGIDMap");
+        const cidToGidMap =
+          dict.getRaw("CIDToGIDMap") || baseDict.getRaw("CIDToGIDMap");
         if (cidToGidMap instanceof Name) {
           hash.update(cidToGidMap.name);
         } else if (cidToGidMap instanceof Ref) {

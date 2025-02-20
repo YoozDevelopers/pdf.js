@@ -515,7 +515,7 @@ class PDFViewer {
     if (!this.pdfDocument) {
       return;
     }
-    this.#setScale(val, {}, { noScroll: false });
+    this.#setScale(val, { noScroll: false });
   }
 
   // MODIF - add new function in next 6 lines
@@ -523,7 +523,7 @@ class PDFViewer {
     if (!this.pdfDocument) {
       return;
     }
-    this.#setScale(val, {}, { noScroll: false }, fromScaleChangingButtons);
+    this.#setScale(val, { noScroll: false }, fromScaleChangingButtons);
   }
 
   /**
@@ -540,7 +540,7 @@ class PDFViewer {
     if (!this.pdfDocument) {
       return;
     }
-    this.#setScale(val, {}, { noScroll: false });
+    this.#setScale(val, { noScroll: false });
   }
 
   /**
@@ -590,7 +590,7 @@ class PDFViewer {
     // Prevent errors in case the rotation changes *before* the scale has been
     // set to a non-default value.
     if (this._currentScaleValue) {
-      this.#setScale(this._currentScaleValue, {}, { noScroll: true });
+      this.#setScale(this._currentScaleValue, { noScroll: true });
     }
 
     this.eventBus.dispatch("rotationchanging", {
@@ -1480,7 +1480,7 @@ class PDFViewer {
 
     if (this.isInPresentationMode) {
       // Fixes the case when PDF has different page sizes.
-      this.#setScale(this._currentScaleValue, {}, { noScroll: true });
+      this.#setScale(this._currentScaleValue, { noScroll: true });
     }
     this.#scrollIntoView(pageView);
   }
@@ -2054,7 +2054,7 @@ class PDFViewer {
     // Call this before re-scrolling to the current page, to ensure that any
     // changes in scale don't move the current page.
     if (this._currentScaleValue && isNaN(this._currentScaleValue)) {
-      this.#setScale(this._currentScaleValue, {}, { noScroll: true });
+      this.#setScale(this._currentScaleValue, { noScroll: true });
     }
     this._setCurrentPageNumber(pageNumber, /* resetCurrentPageView = */ true);
     this.update();
@@ -2135,7 +2135,7 @@ class PDFViewer {
     // Call this before re-scrolling to the current page, to ensure that any
     // changes in scale don't move the current page.
     if (this._currentScaleValue && isNaN(this._currentScaleValue)) {
-      this.#setScale(this._currentScaleValue, {}, { noScroll: true });
+      this.#setScale(this._currentScaleValue, { noScroll: true });
     }
     this._setCurrentPageNumber(pageNumber, /* resetCurrentPageView = */ true);
     this.update();
@@ -2307,7 +2307,7 @@ class PDFViewer {
       } while (--steps > 0);
     }
     newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale));
-    this.#setScale(newScale, {}, { noScroll: false, drawingDelay, origin });
+    this.#setScale(newScale, { noScroll: false, drawingDelay, origin });
   }
 
   /**

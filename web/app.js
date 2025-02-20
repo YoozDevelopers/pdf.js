@@ -1075,6 +1075,18 @@ const PDFViewerApplication = {
         this._unblockDocumentLoadEvent();
       }
 
+      // MODIF - Dans le cas d'un pdf protégé, pour pouvoir charger le pdf et donc que webclient recoive la notif
+      // de fin de chargement, le viewer affiche un dialog de saisie de pwd. On notifie alors webclient
+      // qu'un pwd est requis, en reception de cet event action, webclient va rendre visible de container de viewer
+      // pour que le user puisse saisie le pwd.
+      if (this.pdfViewer?.customConfig?.customEventActions) {
+        // Notifie webclient qu'un mot de passe est requis
+        this.pdfViewer.customConfig.customEventActions.next({
+          type: "PDF_PASSWORD_NEEDED",
+          data: {},
+        });
+      }
+
       this.pdfLinkService.externalLinkEnabled = false;
       this.passwordPrompt.setUpdateCallback(updateCallback, reason);
       this.passwordPrompt.open();
@@ -1983,7 +1995,7 @@ const PDFViewerApplication = {
     });
     eventBus._on(
       "scalechanged",
-      evt => (pdfViewer.currentScaleValue = evt.value),
+      evt => pdfViewer.setCurrentScaleValue(evt.value, true),
       { signal }
     );
     eventBus._on("rotatecw", this.rotatePages.bind(this, 90), { signal });
