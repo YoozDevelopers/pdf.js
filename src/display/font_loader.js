@@ -366,7 +366,7 @@ class FontFaceObject {
     for (const i in translatedData) {
       this[i] = translatedData[i];
     }
-    this.disableFontFace = disableFontFace === true;
+    this.disableFontFace = false;
     this._inspectFont = inspectFont;
   }
 
