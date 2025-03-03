@@ -55,9 +55,9 @@ import {
 } from "display-node_utils";
 import { CanvasGraphics } from "./canvas.js";
 import { DOMCanvasFactory } from "./canvas_factory.js";
-import { DOMCMapReaderFactory } from "display-cmap_reader_factory";
+import { DOMCMapReaderFactory } from "./cmap_reader_factory.js";
 import { DOMFilterFactory } from "./filter_factory.js";
-import { DOMStandardFontDataFactory } from "display-standard_fontdata_factory";
+import { DOMStandardFontDataFactory } from "./standard_fontdata_factory.js";
 import { GlobalWorkerOptions } from "./worker_options.js";
 import { Metadata } from "./metadata.js";
 import { OptionalContentConfig } from "./optional_content_config.js";
@@ -317,7 +317,7 @@ function getDocument(src = {}) {
   const enableHWA = src.enableHWA === true;
 
   // Parameters whose default values depend on other parameters.
-  const length = rangeTransport ? rangeTransport.length : src.length ?? NaN;
+  const length = rangeTransport ? rangeTransport.length : (src.length ?? NaN);
   const useSystemFonts =
     typeof src.useSystemFonts === "boolean"
       ? src.useSystemFonts

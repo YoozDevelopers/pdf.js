@@ -203,22 +203,24 @@ class PDFFindBar {
   }
 
   #resizeObserverCallback() {
-    const { bar } = this;
-    // The find bar has an absolute position and thus the browser extends
-    // its width to the maximum possible width once the find bar does not fit
-    // entirely within the window anymore (and its elements are automatically
-    // wrapped). Here we detect and fix that.
-    bar.classList.remove("wrapContainers");
+    // We wrap it in requestAnimationFrame to avoid this error - ResizeObserver loop limit exceeded
+    window.requestAnimationFrame(() => {
+      const { bar } = this;
+      // The find bar has an absolute position and thus the browser extends
+      // its width to the maximum possible width once the find bar does not fit
+      // entirely within the window anymore (and its elements are automatically
+      // wrapped). Here we detect and fix that.
+      bar.classList.remove("wrapContainers");
 
-    const findbarHeight = bar.clientHeight;
-    const inputContainerHeight = bar.firstElementChild.clientHeight;
-
-    if (findbarHeight > inputContainerHeight) {
-      // The findbar is taller than the input container, which means that
-      // the browser wrapped some of the elements. For a consistent look,
-      // wrap all of them to adjust the width of the find bar.
-      bar.classList.add("wrapContainers");
-    }
+      const findbarHeight = bar.clientHeight;
+      const inputContainerHeight = bar.firstElementChild.clientHeight;
+      if (findbarHeight > inputContainerHeight) {
+        // The findbar is taller than the input container, which means that
+        // the browser wrapped some of the elements. For a consistent look,
+        // wrap all of them to adjust the width of the find bar.
+        bar.classList.add("wrapContainers");
+      }
+    });
   }
 }
 

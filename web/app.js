@@ -536,6 +536,7 @@ const PDFViewerApplication = {
     }
 
     if (!this.supportsIntegratedFind && appConfig.findBar) {
+      console.log("What do we build with ?", appConfig);
       this.findBar = new PDFFindBar(
         appConfig.findBar,
         appConfig.principalContainer,
@@ -2139,18 +2140,6 @@ const PDFViewerApplication = {
     //   passive: false,
     //   signal,
     // });
-    window.addEventListener("touchstart", onTouchStart.bind(this), {
-      passive: false,
-      signal,
-    });
-    window.addEventListener("touchmove", onTouchMove.bind(this), {
-      passive: false,
-      signal,
-    });
-    window.addEventListener("touchend", onTouchEnd.bind(this), {
-      passive: false,
-      signal,
-    });
     window.addEventListener("click", onClick.bind(this), { signal });
     window.addEventListener("keydown", onKeyDown.bind(this), { signal });
     window.addEventListener("keyup", onKeyUp.bind(this), { signal });
