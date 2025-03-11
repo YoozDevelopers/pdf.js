@@ -536,7 +536,6 @@ const PDFViewerApplication = {
     }
 
     if (!this.supportsIntegratedFind && appConfig.findBar) {
-      console.log("What do we build with ?", appConfig);
       this.findBar = new PDFFindBar(
         appConfig.findBar,
         appConfig.principalContainer,
@@ -1101,6 +1100,18 @@ const PDFViewerApplication = {
         // if the viewer is in an iframe and its visibility depends on the
         // onload callback then the viewer never shows (bug 1801341).
         this._unblockDocumentLoadEvent();
+      }
+
+      // MODIF - Dans le cas d'un pdf protégé, pour pouvoir charger le pdf et donc que webclient recoive la notif
+      // de fin de chargement, le viewer affiche un dialog de saisie de pwd. On notifie alors webclient
+      // qu'un pwd est requis, en reception de cet event action, webclient va rendre visible de container de viewer
+      // pour que le user puisse saisie le pwd.
+      if (this.pdfViewer?.customConfig?.customEventActions) {
+        // Notifie webclient qu'un mot de passe est requis
+        this.pdfViewer.customConfig.customEventActions.next({
+          type: "PDF_PASSWORD_NEEDED",
+          data: {},
+        });
       }
 
       this.pdfLinkService.externalLinkEnabled = false;
@@ -2788,6 +2799,7 @@ function closeSecondaryToolbar(evt) {
   if (
     this.pdfViewer.containsElement(evt.target) ||
     (appConfig.toolbar?.container.contains(evt.target) &&
+      !appConfig.secondaryToolbar?.toolbar.contains(evt.target) &&
       // TODO: change the `contains` for an equality check when the bug:
       //  https://bugzilla.mozilla.org/show_bug.cgi?id=1921984
       // is fixed.

@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-import "./pdf.scripting.js";
 import ModuleLoader from "../external/quickjs/quickjs-eval.js";
 import { SandboxSupportBase } from "./pdf.sandbox.external.js";
 
@@ -56,16 +55,12 @@ class Sandbox {
   }
 
   create(data) {
-    // if (PDFJSDev.test("TESTING")) {
-    //   this._module.ccall("nukeSandbox", null, []);
-    // }
-    const code = [
-      typeof PDFJSDev !== "undefined"
-        ? PDFJSDev.eval("PDF_SCRIPTING_JS_SOURCE")
-        : "",
-    ];
+    if (PDFJSDev.test("TESTING")) {
+      this._module.ccall("nukeSandbox", null, []);
+    }
+    const code = [PDFJSDev.eval("PDF_SCRIPTING_JS_SOURCE")];
 
-    if (typeof PDFJSDev !== "undefined" && PDFJSDev?.test("TESTING")) {
+    if (PDFJSDev.test("TESTING")) {
       code.push(
         `globalThis.sendResultForTesting = callExternalFunction.bind(null, "send");`
       );

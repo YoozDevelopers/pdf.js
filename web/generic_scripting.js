@@ -43,7 +43,7 @@ class GenericScripting {
   constructor() {
     this._ready = new Promise(async (resolve, reject) => {
       try {
-        const sandbox = await import("../src/pdf.sandbox.js");
+        const sandbox = await import("../build/dev-sandbox/pdf.sandbox.mjs");
         resolve(sandbox.QuickJSSandbox());
       } catch (e) {
         reject(e);

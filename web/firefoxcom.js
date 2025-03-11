@@ -298,6 +298,7 @@ class FirefoxScripting {
   }
 
   static async dispatchEventInSandbox(event) {
+    console.log("Dispatch event in sandbox in firefoxcom");
     FirefoxCom.request("dispatchEventInSandbox", event);
   }
 
