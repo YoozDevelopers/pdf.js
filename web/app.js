@@ -2020,7 +2020,7 @@ const PDFViewerApplication = {
     eventBus._on("pagenumberchanged", onPageNumberChanged.bind(this), opts);
     eventBus._on(
       "scalechanged",
-      evt => (pdfViewer.currentScaleValue = evt.value),
+      evt => pdfViewer.setCurrentScaleValue(evt.value, true),
       opts
     );
     eventBus._on("rotatepagecw", this.rotatePage.bind(this, 90), opts);
