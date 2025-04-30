@@ -1754,13 +1754,14 @@ const PDFViewerApplication = {
     }
     const { annotationStorage } = pdfDocument;
 
-    annotationStorage.onSetModified = () => {
-      window.addEventListener("beforeunload", beforeUnload);
+    // DR-20753 - Disable editing
+    // annotationStorage.onSetModified = () => {
+    //   window.addEventListener("beforeunload", beforeUnload);
 
-      if (typeof PDFJSDev === "undefined" || PDFJSDev.test("GENERIC")) {
-        this._annotationStorageModified = true;
-      }
-    };
+    //   if (typeof PDFJSDev === "undefined" || PDFJSDev.test("GENERIC")) {
+    //     this._annotationStorageModified = true;
+    //   }
+    // };
     annotationStorage.onResetModified = () => {
       window.removeEventListener("beforeunload", beforeUnload);
 
