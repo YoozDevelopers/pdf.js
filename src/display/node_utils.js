@@ -19,6 +19,7 @@ import { BaseCanvasFactory } from "./canvas_factory.js";
 import { BaseCMapReaderFactory } from "./cmap_reader_factory.js";
 import { BaseFilterFactory } from "./filter_factory.js";
 import { BaseStandardFontDataFactory } from "./standard_fontdata_factory.js";
+import { BaseWasmFactory } from "./wasm_factory.js";
 
 if (typeof PDFJSDev !== "undefined" && PDFJSDev.test("MOZCENTRAL")) {
   throw new Error(
@@ -110,10 +111,20 @@ class NodeStandardFontDataFactory extends BaseStandardFontDataFactory {
   }
 }
 
+class NodeWasmFactory extends BaseWasmFactory {
+  /**
+   * @ignore
+   */
+  async _fetch(url) {
+    return fetchData(url);
+  }
+}
+
 export {
   fetchData,
   NodeCanvasFactory,
   NodeCMapReaderFactory,
   NodeFilterFactory,
   NodeStandardFontDataFactory,
+  NodeWasmFactory,
 };
