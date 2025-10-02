@@ -47,7 +47,8 @@ function download(blobUrl, filename) {
  * @implements {IDownloadManager}
  */
 class DownloadManager {
-  #openBlobUrls = new WeakMap();
+  // MODIF - variable not used
+  // #openBlobUrls = new WeakMap();
 
   downloadData(data, filename, contentType) {
     const blobUrl = URL.createObjectURL(
@@ -63,6 +64,8 @@ class DownloadManager {
     const isPdfData = isPdfFile(filename);
     const contentType = isPdfData ? "application/pdf" : "";
 
+    // MODIF - force download of embedded pdf
+    /*
     if (
       (typeof PDFJSDev === "undefined" || !PDFJSDev.test("COMPONENTS")) &&
       isPdfData
@@ -100,6 +103,7 @@ class DownloadManager {
         this.#openBlobUrls.delete(data);
       }
     }
+    */
 
     this.downloadData(data, filename, contentType);
     return false;
