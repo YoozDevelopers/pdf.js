@@ -492,7 +492,8 @@ class PDFSidebar {
   }
 
   #mouseMove(evt) {
-    let width = evt.clientX;
+    // Calculate width with outerContainer left offset
+    let width = evt.clientX - this.outerContainer.getBoundingClientRect().left;
     // For sidebar resizing to work correctly in RTL mode, invert the width.
     if (this.#isRTL) {
       width = this.outerContainerWidth - width;
@@ -503,6 +504,14 @@ class PDFSidebar {
   #mouseUp(evt) {
     // Re-enable the `transition-duration` rules when sidebar resizing ends...
     this.outerContainer.classList.remove(SIDEBAR_RESIZING_CLASS);
+    // Remove unwanted text selection inside outerContainer
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      if (this.outerContainer.contains(range.commonAncestorContainer)) {
+        selection.removeAllRanges();
+      }
+    }
     // ... and ensure that rendering will always be triggered.
     this.eventBus.dispatch("resize", { source: this });
 
