@@ -23,9 +23,10 @@ import {
   MIN_SCALE,
   toggleExpandedBtn,
 } from "./ui_utils.js";
+import { internalOpt } from "./internal_evt.js";
 
 /**
- * @typedef {Object} ToolbarOptions
+ * @typedef {object} ToolbarOptions
  * @property {HTMLDivElement} container - Container for the secondary toolbar.
  * @property {HTMLSpanElement} numPages - Label that contains number of pages.
  * @property {HTMLInputElement} pageNumber - Control for display and user input
@@ -67,6 +68,18 @@ class Toolbar {
       { element: options.zoomOut, eventName: "zoomout" },
       { element: options.print, eventName: "print" },
       { element: options.download, eventName: "download" },
+      {
+        element: options.editorCommentButton,
+        eventName: "switchannotationeditormode",
+        eventDetails: {
+          get mode() {
+            const { classList } = options.editorCommentButton;
+            return classList.contains("toggled")
+              ? AnnotationEditorType.NONE
+              : AnnotationEditorType.POPUP;
+          },
+        },
+      },
       {
         element: options.editorFreeTextButton,
         eventName: "switchannotationeditormode",
@@ -174,6 +187,10 @@ class Toolbar {
 
     // The buttons within the toolbar.
     for (const { element, eventName, eventDetails, telemetry } of buttons) {
+      // MODIF - skip the buttons the Yooz toolbar does not render
+      if (!element) {
+        continue;
+      }
       element.addEventListener("click", evt => {
         if (eventName !== null) {
           eventBus.dispatch(eventName, {
@@ -201,6 +218,16 @@ class Toolbar {
         value: this.value,
       });
     });
+    eventBus.on(
+      "pagesedited",
+      ({ pagesMapper }) => {
+        const pagesCount = pagesMapper.pagesNumber;
+        if (pagesCount !== this.pagesCount) {
+          this.setPagesCount(pagesCount, this.hasPageLabels);
+        }
+      },
+      internalOpt
+    );
 
     scaleSelect.addEventListener("change", function () {
       if (this.value === "custom") {
@@ -226,65 +253,74 @@ class Toolbar {
     // Suppress context menus for some controls.
     scaleSelect.oncontextmenu = noContextMenu;
 
-    eventBus._on(
+    eventBus.on(
       "annotationeditormodechanged",
-      this.#editorModeChanged.bind(this)
+      this.#editorModeChanged.bind(this),
+      internalOpt
     );
-    eventBus._on("showannotationeditorui", ({ mode }) => {
-      switch (mode) {
-        case AnnotationEditorType.HIGHLIGHT:
-          editorHighlightButton.click();
-          break;
-      }
-    });
-    eventBus._on("toolbardensity", this.#updateToolbarDensity.bind(this));
+    eventBus.on(
+      "showannotationeditorui",
+      ({ mode }) => {
+        switch (mode) {
+          case AnnotationEditorType.HIGHLIGHT:
+            editorHighlightButton.click();
+            break;
+        }
+      },
+      internalOpt
+    );
+    eventBus.on(
+      "toolbardensity",
+      this.#updateToolbarDensity.bind(this),
+      internalOpt
+    );
 
     if (editorHighlightColorPicker) {
-      eventBus._on("annotationeditoruimanager", ({ uiManager }) => {
-        const cp = (this.#colorPicker = new ColorPicker({ uiManager }));
-        uiManager.setMainHighlightColorPicker(cp);
-        editorHighlightColorPicker.append(cp.renderMainDropdown());
-      });
+      eventBus.on(
+        "annotationeditoruimanager",
+        ({ uiManager }) => {
+          const cp = (this.#colorPicker = new ColorPicker({ uiManager }));
+          uiManager.setMainHighlightColorPicker(cp);
+          editorHighlightColorPicker.append(cp.renderMainDropdown());
+        },
+        internalOpt
+      );
 
-      eventBus._on("mainhighlightcolorpickerupdatecolor", ({ value }) => {
-        this.#colorPicker?.updateColor(value);
-      });
+      eventBus.on(
+        "mainhighlightcolorpickerupdatecolor",
+        ({ value }) => {
+          this.#colorPicker?.update(value);
+        },
+        internalOpt
+      );
     }
   }
 
   #editorModeChanged({ mode }) {
-    const {
-      editorFreeTextButton,
-      editorFreeTextParamsToolbar,
-      editorInkButton,
-      editorInkParamsToolbar,
-    } = this.#opts;
-
-    toggleExpandedBtn(
-      editorFreeTextButton,
-      mode === AnnotationEditorType.FREETEXT,
-      editorFreeTextParamsToolbar
-    );
-    toggleExpandedBtn(
-      editorHighlightButton,
-      mode === AnnotationEditorType.HIGHLIGHT,
-      editorHighlightParamsToolbar
-    );
-    toggleExpandedBtn(
-      editorInkButton,
-      mode === AnnotationEditorType.INK,
-      editorInkParamsToolbar
-    );
-    toggleExpandedBtn(
-      editorStampButton,
-      mode === AnnotationEditorType.STAMP,
-      editorStampParamsToolbar
-    );
-
-    const isDisable = mode === AnnotationEditorType.DISABLE;
-    editorFreeTextButton.disabled = isDisable;
-    editorInkButton.disabled = isDisable;
+    // MODIF - the Yooz toolbar does not render every editor button: skip the
+    // missing ones instead of failing on null.
+    const opts = this.#opts;
+    for (const [name, editorType] of [
+      ["Comment", AnnotationEditorType.POPUP],
+      ["FreeText", AnnotationEditorType.FREETEXT],
+      ["Highlight", AnnotationEditorType.HIGHLIGHT],
+      ["Ink", AnnotationEditorType.INK],
+      ["Stamp", AnnotationEditorType.STAMP],
+      ["Signature", AnnotationEditorType.SIGNATURE],
+    ]) {
+      const button = opts[`editor${name}Button`];
+      if (!button) {
+        continue;
+      }
+      toggleExpandedBtn(
+        button,
+        mode === editorType,
+        opts[`editor${name}ParamsToolbar`]
+      );
+      button.disabled = mode === AnnotationEditorType.DISABLE;
+    }
   }
+
 
   #updateUIState(resetNumPages = false) {
     const { pageNumber, pagesCount, pageScaleValue, pageScale } = this;

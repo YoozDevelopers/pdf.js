@@ -34,14 +34,16 @@ async function docProperties(pdfDocument) {
 }
 
 class GenericScripting {
-  constructor() {
-    this._ready = new Promise(async (resolve, reject) => {
-      try {
-        const sandbox = await import("../build/dev-sandbox/pdf.sandbox.mjs");
-        resolve(sandbox.QuickJSSandbox());
-      } catch (e) {
-        reject(e);
-      }
+  constructor(sandboxBundleSrc, wasmUrl) {
+    // MODIF - static sandbox path for the Yooz webpack bundle
+    this._ready = new Promise((resolve, reject) => {
+      import("../build/dev-sandbox/pdf.sandbox.mjs")
+        .then(pdfjsSandbox => {
+          resolve(
+            pdfjsSandbox.QuickJSSandbox(new URL(wasmUrl, location.href).href)
+          );
+        })
+        .catch(reject);
     });
   }
 

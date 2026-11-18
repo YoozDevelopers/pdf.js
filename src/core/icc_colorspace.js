@@ -24,7 +24,7 @@ import {
   qcms_drop_transformer,
   qcms_transformer_from_memory,
 } from "../../external/qcms/qcms.js";
-import { shadow, warn } from "../shared/util.js";
+import { shadow, Util, warn } from "../shared/util.js";
 import { ColorSpace } from "./colorspace.js";
 import { QCMS } from "../../external/qcms/qcms_utils.js";
 
@@ -48,9 +48,7 @@ class IccColorSpace extends ColorSpace {
 
   static #wasmUrl = null;
 
-  static #finalizer = new FinalizationRegistry(transformer => {
-    qcms_drop_transformer(transformer);
-  });
+  static #finalizer = null;
 
   constructor(iccProfile, name, numComps) {
     if (!IccColorSpace.isUsable) {
@@ -98,12 +96,38 @@ class IccColorSpace extends ColorSpace {
     if (!this.#transformer) {
       throw new Error("Failed to create ICC color space");
     }
+    IccColorSpace.#finalizer ||= new FinalizationRegistry(transformer => {
+      qcms_drop_transformer(transformer);
+    });
     IccColorSpace.#finalizer.register(this, this.#transformer);
   }
 
+  getRgbHex(src, srcOffset) {
+    const color = this.#convertPixel(src, srcOffset);
+    return Util.makeHexColor(color >> 16, (color >> 8) & 0xff, color & 0xff);
+  }
+
   getRgbItem(src, srcOffset, dest, destOffset) {
-    QCMS._destBuffer = dest.subarray(destOffset, destOffset + 3);
-    this.#convertPixel(src, srcOffset);
+    const color = this.#convertPixel(src, srcOffset);
+    dest[destOffset] = color >> 16;
+    dest[destOffset + 1] = (color >> 8) & 0xff;
+    dest[destOffset + 2] = color & 0xff;
+  }
+
+  getRgbItems(src, count, dest, destOffset, alpha01) {
+    const { numComps } = this;
+    const length = count * numComps;
+    const scaled = new Uint8Array(length);
+    // Uint8Array matches the truncation and wrapping of the scalar Wasm calls.
+    for (let i = 0; i < length; i++) {
+      scaled[i] = src[i] * 255;
+    }
+    QCMS._destBuffer = dest;
+    QCMS._destOffset = destOffset;
+    // `scaled` is freshly allocated, so unlike in getRgbBuffer it can never
+    // alias `dest`: an RGBA destination always has an alpha channel to keep.
+    QCMS._keepAlpha = alpha01 === 1;
+    qcms_convert_array(this.#transformer, scaled, alpha01 === 1);
     QCMS._destBuffer = null;
   }
 
@@ -115,18 +139,13 @@ class IccColorSpace extends ColorSpace {
         src[i] *= scale;
       }
     }
-    QCMS._mustAddAlpha = alpha01 && dest.buffer === src.buffer;
-    QCMS._destBuffer = dest.subarray(
-      destOffset,
-      destOffset + count * (3 + alpha01)
-    );
-    qcms_convert_array(this.#transformer, src);
-    QCMS._mustAddAlpha = false;
+    QCMS._destBuffer = dest;
+    QCMS._destOffset = destOffset;
+    // The wasm side always fills alpha in, so say when the destination's own
+    // alpha must survive: an /SMask has been decoded into it by now.
+    QCMS._keepAlpha = alpha01 === 1 && dest.buffer !== src.buffer;
+    qcms_convert_array(this.#transformer, src, alpha01 === 1);
     QCMS._destBuffer = null;
-  }
-
-  getOutputLength(inputLength, alpha01) {
-    return ((inputLength / this.numComps) * (3 + alpha01)) | 0;
   }
 
   static setOptions({ useWasm, useWorkerFetch, wasmUrl }) {
@@ -143,10 +162,11 @@ class IccColorSpace extends ColorSpace {
     if (this.#useWasm) {
       if (this.#wasmUrl) {
         try {
-          this._module = QCMS._module = initSync({
+          this._module = initSync({
             module: fetchSync(`${this.#wasmUrl}qcms_bg.wasm`),
           });
           isUsable = !!this._module;
+          QCMS._memory = this._module.memory;
         } catch (e) {
           warn(`ICCBased color space: "${e}".`);
         }

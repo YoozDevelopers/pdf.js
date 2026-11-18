@@ -13,11 +13,10 @@
  * limitations under the License.
  */
 
-/** @typedef {import("./interfaces").IL10n} IL10n */
-
+// MODIF - resolve fluent from node_modules (no gulp import map)
 import { FluentBundle, FluentResource } from "@fluent/bundle";
 import { DOMLocalization } from "@fluent/dom";
-import { fetchData } from "pdfjs-lib";
+import { FeatureTest, fetchData } from "pdfjs-lib";
 import { L10n } from "./l10n.js";
 
 function PLATFORM() {
@@ -31,10 +30,7 @@ function PLATFORM() {
   if (isMac) {
     return "macos";
   }
-  if (isAndroid) {
-    return "android";
-  }
-  return "other";
+  return isAndroid ? "android" : "other";
 }
 
 function createBundle(lang, text) {
@@ -49,9 +45,6 @@ function createBundle(lang, text) {
   return bundle;
 }
 
-/**
- * @implements {IL10n}
- */
 class GenericL10n extends L10n {
   constructor(lang) {
     super({ lang });
@@ -71,9 +64,9 @@ class GenericL10n extends L10n {
 
   /**
    * Generate the bundles for Fluent.
-   * @param {String} defaultLang - The fallback language to use for
+   * @param {string} defaultLang - The fallback language to use for
    *   translations.
-   * @param {String} baseLang - The base language to use for translations.
+   * @param {string} baseLang - The base language to use for translations.
    */
   static async *#generateBundles(defaultLang, baseLang) {
     const { baseURL, paths } = await this.#getPaths();
