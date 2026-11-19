@@ -911,6 +911,11 @@ const PDFViewerApplication = {
     }
 
     const togglePrintingButtons = visible => {
+      // MODIF - DR-24186 the Yooz templates hide these buttons (Yooz prints
+      // through its own action): only hide them, never show them again.
+      if (visible) {
+        return;
+      }
       appConfig.toolbar?.print?.classList.toggle("hidden", !visible);
       appConfig.secondaryToolbar?.printButton.classList.toggle(
         "hidden",
