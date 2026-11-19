@@ -839,6 +839,8 @@ const PDFViewerApplication = {
 
   async run(config) {
     await this.initialize(config);
+    // MODIF - DR-24186 this viewer, not the legacy one, prints for the webclient
+    PDFPrintServiceFactory.registerPrintPdfViewer();
 
     const { appConfig, eventBus } = this;
     let file;

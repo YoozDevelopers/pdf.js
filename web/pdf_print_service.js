@@ -290,7 +290,10 @@ class PDFPrintService {
 }
 
 const print = window.print;
-window.printPdfViewer = function () {
+// MODIF - DR-24186 the webclient bundles this viewer next to the legacy one,
+// which defines window.printPdfViewer too: the viewer that runs registers it
+// (PDFPrintServiceFactory.registerPrintPdfViewer, from app.js run()).
+const printPdfViewer = function () {
   if (activeService) {
     console.warn("Ignored window.print() because of a pending print job.");
     return;
@@ -425,6 +428,11 @@ function ensureOverlay() {
 class PDFPrintServiceFactory extends BasePrintServiceFactory {
   static initGlobals(app) {
     viewerApp = app;
+  }
+
+  // MODIF - DR-24186 see printPdfViewer above
+  static registerPrintPdfViewer() {
+    window.printPdfViewer = printPdfViewer;
   }
 
   static get supportsPrinting() {
