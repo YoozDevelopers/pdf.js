@@ -147,12 +147,15 @@ class PDFPrintService {
       );
       this.pageStyleSheet = null;
     }
-    if (this._blobURLs) {
-      for (const url of this._blobURLs) {
-        URL.revokeObjectURL(url);
-      }
-      this._blobURLs = null;
-    }
+    // MODIF - DR-24186 keep the page images alive (as the Yooz 5.2 viewer did):
+    // performPrint copies them into the print popup, which loads them after
+    // this service is destroyed (about 20 ms after writing the popup).
+    // if (this._blobURLs) {
+    //   for (const url of this._blobURLs) {
+    //     URL.revokeObjectURL(url);
+    //   }
+    // }
+    this._blobURLs = null;
     this.scratchCanvas.width = this.scratchCanvas.height = 0;
     this.scratchCanvas = null;
     activeService = null;
