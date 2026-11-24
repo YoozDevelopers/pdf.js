@@ -13,42 +13,66 @@
  * limitations under the License.
  */
 
+// Alpha lives in the high byte of a pixel on a little-endian host and in the
+// low byte on a big-endian one.
+const ALPHA_MASK =
+  new Uint8Array(new Uint32Array([1]).buffer)[0] === 1 ? 0xff000000 : 0x000000ff;
+const RGB_MASK = ~ALPHA_MASK;
+
 class QCMS {
-  static _module = null;
+  static #memoryArray = null;
 
-  static _mustAddAlpha = false;
+  static _memory = null;
 
+  // Where the next `qcms_convert_array` result should land.
   static _destBuffer = null;
+
+  static _destOffset = 0;
+
+  // Set when the destination is RGBA and its alpha channel already holds
+  // something worth keeping, which is the case whenever the image has an
+  // /SMask: `fillOpacity` has run by then. The Wasm side does not know about
+  // that, so it always fills alpha in, and the bytes are merged here instead of
+  // copied wholesale.
+  static _keepAlpha = false;
+
+  static get _memoryArray() {
+    const array = this.#memoryArray;
+    if (array?.byteLength) {
+      return array;
+    }
+    return (this.#memoryArray = new Uint8Array(this._memory.buffer));
+  }
 }
 
 function copy_result(ptr, len) {
   // This function is called from the wasm module (it's an external
   // "C" function). Its goal is to copy the result from the wasm memory
-  // to the destination buffer without any intermediate copies.
-  const { _module, _mustAddAlpha, _destBuffer } = QCMS;
-  const result = new Uint8Array(_module.memory.buffer, ptr, len);
-  if (result.length === _destBuffer.length) {
-    _destBuffer.set(result);
+  // to the destination buffer without any intermediate copies. The wasm side
+  // has already laid the result out the way the caller asked for it, so this is
+  // one bulk copy unless the destination's alpha has to survive.
+  const { _destBuffer, _destOffset, _keepAlpha, _memoryArray } = QCMS;
+  if (!_keepAlpha) {
+    _destBuffer.set(_memoryArray.subarray(ptr, ptr + len), _destOffset);
     return;
   }
-  if (_mustAddAlpha) {
-    for (let i = 0, j = 0, ii = result.length; i < ii; i += 3, j += 4) {
-      _destBuffer[j] = result[i];
-      _destBuffer[j + 1] = result[i + 1];
-      _destBuffer[j + 2] = result[i + 2];
-      _destBuffer[j + 3] = 255;
+  const count = len >> 2;
+  const destStart = _destBuffer.byteOffset + _destOffset;
+  if (((destStart | ptr) & 3) === 0) {
+    // Both sides are pixel-aligned, so RGB can be merged a whole pixel at a
+    // time. `len` is a multiple of 4 here: the wasm side wrote RGBA.
+    const dest32 = new Uint32Array(_destBuffer.buffer, destStart, count);
+    const src32 = new Uint32Array(QCMS._memory.buffer, ptr, count);
+    for (let i = 0; i < count; i++) {
+      dest32[i] = (dest32[i] & ALPHA_MASK) | (src32[i] & RGB_MASK);
     }
-  } else {
-    for (let i = 0, j = 0, ii = result.length; i < ii; i += 3, j += 4) {
-      _destBuffer[j] = result[i];
-      _destBuffer[j + 1] = result[i + 1];
-      _destBuffer[j + 2] = result[i + 2];
-    }
+    return;
+  }
+  for (let i = ptr, ii = ptr + len, j = _destOffset; i < ii; i += 4, j += 4) {
+    _destBuffer[j] = _memoryArray[i];
+    _destBuffer[j + 1] = _memoryArray[i + 1];
+    _destBuffer[j + 2] = _memoryArray[i + 2];
   }
 }
 
-function copy_rgb(ptr) {
-  QCMS._destBuffer.set(new Uint8Array(QCMS._module.memory.buffer, ptr, 3));
-}
-
-export { copy_result, copy_rgb, QCMS };
+export { copy_result, QCMS };

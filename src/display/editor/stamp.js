@@ -14,11 +14,8 @@
  */
 
 import { AnnotationEditorType, AnnotationPrefix } from "../../shared/util.js";
-import {
-  OutputScale,
-  PixelsPerInch,
-  SupportedImageMimeTypes,
-} from "../display_utils.js";
+import { ColorScheme, SupportedImageMimeTypes } from "../dom_utils.js";
+import { OutputScale, PixelsPerInch } from "../display_utils.js";
 import { AnnotationEditor } from "./editor.js";
 import { StampAnnotationElement } from "../annotation_layer.js";
 
@@ -66,14 +63,15 @@ class StampEditor extends AnnotationEditor {
 
   /** @inheritdoc */
   static isHandlingMimeForPasting(mime) {
-    return SupportedImageMimeTypes.includes(mime);
+    return SupportedImageMimeTypes.has(mime);
   }
 
   /** @inheritdoc */
   static paste(item, parent) {
-    parent.pasteEditor(AnnotationEditorType.STAMP, {
-      bitmapFile: item.getAsFile(),
-    });
+    parent.pasteEditor(
+      { mode: AnnotationEditorType.STAMP },
+      { bitmapFile: item.getAsFile() }
+    );
   }
 
   /** @inheritdoc */
@@ -127,8 +125,10 @@ class StampEditor extends AnnotationEditor {
       this._uiManager.useNewAltTextFlow &&
       this.#bitmap
     ) {
-      this._editToolbar.hide();
-      this._uiManager.editAltText(this, /* firstTime = */ true);
+      this.addEditToolbar().then(() => {
+        this._editToolbar.hide();
+        this._uiManager.editAltText(this, /* firstTime = */ true);
+      });
       return;
     }
 
@@ -234,7 +234,7 @@ class StampEditor extends AnnotationEditor {
       document.body.append(input);
     }
     input.type = "file";
-    input.accept = SupportedImageMimeTypes.join(",");
+    input.accept = SupportedImageMimeTypes.keys().join(",");
     const signal = this._uiManager._signal;
     this.#bitmapPromise = new Promise(resolve => {
       input.addEventListener(
@@ -336,6 +336,11 @@ class StampEditor extends AnnotationEditor {
   }
 
   /** @inheritdoc */
+  get toolbarButtons() {
+    return [["altText", this.createAltText()]];
+  }
+
+  /** @inheritdoc */
   get isResizable() {
     return true;
   }
@@ -355,7 +360,7 @@ class StampEditor extends AnnotationEditor {
     super.render();
     this.div.hidden = true;
 
-    this.addAltTextButton();
+    this.createAltText();
 
     if (!this.#missingCanvas) {
       if (this.#bitmap) {
@@ -425,7 +430,7 @@ class StampEditor extends AnnotationEditor {
       width > MAX_RATIO * pageWidth ||
       height > MAX_RATIO * pageHeight
     ) {
-      // If the the image is too big compared to the page dimensions
+      // If the image is too big compared to the page dimensions
       // (more than MAX_RATIO) then we scale it down.
       const factor = Math.min(
         (MAX_RATIO * pageWidth) / width,
@@ -434,11 +439,6 @@ class StampEditor extends AnnotationEditor {
       width *= factor;
       height *= factor;
     }
-    const [parentWidth, parentHeight] = this.parentDimensions;
-    this.setDims(
-      (width * parentWidth) / pageWidth,
-      (height * parentHeight) / pageHeight
-    );
 
     this._uiManager.enableWaiting(false);
     const canvas = (this.#canvas = document.createElement("canvas"));
@@ -447,6 +447,8 @@ class StampEditor extends AnnotationEditor {
 
     this.width = width / pageWidth;
     this.height = height / pageHeight;
+    this.setDims();
+
     if (this._initialOptions?.isCentered) {
       this.center();
     } else {
@@ -476,15 +478,16 @@ class StampEditor extends AnnotationEditor {
     if (this.#bitmapFileName) {
       this.div.setAttribute("aria-description", this.#bitmapFileName);
     }
+    if (!this.annotationElementId) {
+      this._uiManager.a11yAlert(AnnotationEditor._l10nAlert.stamp);
+    }
   }
 
   copyCanvas(maxDataDimension, maxPreviewDimension, createImageData = false) {
-    if (!maxDataDimension) {
-      // TODO: get this value from Firefox
-      //   (https://bugzilla.mozilla.org/show_bug.cgi?id=1908184)
-      // It's the maximum dimension that the AI can handle.
-      maxDataDimension = 224;
-    }
+    // TODO: get this value from Firefox
+    //   (https://bugzilla.mozilla.org/show_bug.cgi?id=1908184)
+    // It's the maximum dimension that the AI can handle.
+    maxDataDimension ||= 224;
 
     const { width: bitmapWidth, height: bitmapHeight } = this.#bitmap;
     const outputScale = new OutputScale();
@@ -524,7 +527,7 @@ class StampEditor extends AnnotationEditor {
         black = "#cfcfd8";
       if (this._uiManager.hcmFilter !== "none") {
         black = "black";
-      } else if (window.matchMedia?.("(prefers-color-scheme: dark)").matches) {
+      } else if (ColorScheme.isDarkMode) {
         white = "#8f8f9d";
         black = "#42414d";
       }
@@ -615,19 +618,10 @@ class StampEditor extends AnnotationEditor {
       const prevHeight = newHeight;
 
       if (newWidth > 2 * width) {
-        // See bug 1820511 (Windows specific bug).
-        // TODO: once the above bug is fixed we could revert to:
-        // newWidth = Math.ceil(newWidth / 2);
-        newWidth =
-          newWidth >= 16384
-            ? Math.floor(newWidth / 2) - 1
-            : Math.ceil(newWidth / 2);
+        newWidth = Math.ceil(newWidth / 2);
       }
       if (newHeight > 2 * height) {
-        newHeight =
-          newHeight >= 16384
-            ? Math.floor(newHeight / 2) - 1
-            : Math.ceil(newHeight / 2);
+        newHeight = Math.ceil(newHeight / 2);
       }
 
       const offscreen = new OffscreenCanvas(newWidth, newHeight);
@@ -739,7 +733,17 @@ class StampEditor extends AnnotationEditor {
     let missingCanvas = false;
     if (data instanceof StampAnnotationElement) {
       const {
-        data: { rect, rotation, id, structParent, popupRef },
+        data: {
+          rect,
+          rotation,
+          id,
+          structParent,
+          popupRef,
+          richText,
+          contentsObj,
+          creationDate,
+          modificationDate,
+        },
         container,
         parent: {
           page: { pageNumber },
@@ -773,6 +777,7 @@ class StampEditor extends AnnotationEditor {
         pageIndex: pageNumber - 1,
         rect: rect.slice(0),
         rotation,
+        annotationElementId: id,
         id,
         deleted: false,
         accessibilityData: {
@@ -782,6 +787,10 @@ class StampEditor extends AnnotationEditor {
         isSvg: false,
         structParent,
         popupRef,
+        richText,
+        comment: contentsObj?.str || null,
+        creationDate,
+        modificationDate,
       };
     }
     const editor = await super.deserialize(data, parent, uiManager);
@@ -804,11 +813,13 @@ class StampEditor extends AnnotationEditor {
     editor.width = (rect[2] - rect[0]) / parentWidth;
     editor.height = (rect[3] - rect[1]) / parentHeight;
 
-    editor.annotationElementId = data.id || null;
     if (accessibilityData) {
       editor.altTextData = accessibilityData;
     }
     editor._initialData = initialData;
+    if (data.comment) {
+      editor.setCommentData(data);
+    }
     // No need to be add in the undo stack if the editor is created from an
     // existing one.
     editor.#hasBeenAddedInUndoStack = !!initialData;
@@ -826,15 +837,11 @@ class StampEditor extends AnnotationEditor {
       return this.serializeDeleted();
     }
 
-    const serialized = {
-      annotationType: AnnotationEditorType.STAMP,
+    const serialized = Object.assign(super.serialize(isForCopying), {
       bitmapId: this.#bitmapId,
-      pageIndex: this.pageIndex,
-      rect: this.getRect(0, 0),
-      rotation: this.rotation,
       isSvg: this.#isSvg,
-      structTreeParentId: this._structTreeParentId,
-    };
+    });
+    this.addComment(serialized);
 
     if (isForCopying) {
       // We don't know what's the final destination (this pdf or another one)
@@ -859,11 +866,22 @@ class StampEditor extends AnnotationEditor {
       if (changes.isSameAltText) {
         delete serialized.accessibilityData;
       } else {
-        serialized.accessibilityData.structParent =
-          this._initialData.structParent ?? -1;
+        const structParent = this._initialData.structParent ?? -1;
+        if (serialized.accessibilityData) {
+          serialized.accessibilityData.structParent = structParent;
+        } else if (structParent >= 0) {
+          // Clear the existing tag's alt text.
+          serialized.accessibilityData = {
+            type: "Figure",
+            alt: "",
+            structParent,
+          };
+        }
       }
+      serialized.id = this.annotationElementId;
+      delete serialized.bitmapId;
+      return serialized;
     }
-    serialized.id = this.annotationElementId;
 
     if (context === null) {
       return serialized;
@@ -903,6 +921,7 @@ class StampEditor extends AnnotationEditor {
 
     return {
       isSame:
+        !this.hasEditedComment &&
         !this._hasBeenMoved &&
         !this._hasBeenResized &&
         isSamePageIndex &&
@@ -913,8 +932,13 @@ class StampEditor extends AnnotationEditor {
 
   /** @inheritdoc */
   renderAnnotationElement(annotation) {
+    if (this.deleted) {
+      annotation.hide();
+      return null;
+    }
     annotation.updateEdited({
-      rect: this.getRect(0, 0),
+      rect: this.getPDFRect(),
+      popup: this.comment,
     });
 
     return null;

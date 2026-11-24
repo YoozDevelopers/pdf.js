@@ -13,16 +13,16 @@
  * limitations under the License.
  */
 
-// eslint-disable-next-line max-len
-/** @typedef {import("./interfaces.js").IPDFPrintServiceFactory} IPDFPrintServiceFactory */
-
 import {
   AnnotationMode,
   PixelsPerInch,
   RenderingCancelledException,
   shadow,
 } from "pdfjs-lib";
-import { getXfaHtmlForPrinting } from "./print_utils.js";
+import {
+  BasePrintServiceFactory,
+  getXfaHtmlForPrinting,
+} from "./print_utils.js";
 
 let activeService = null;
 let dialog = null;
@@ -58,7 +58,7 @@ function renderPage(
     printAnnotationStoragePromise,
   ]).then(function ([pdfPage, printAnnotationStorage]) {
     const renderContext = {
-      canvasContext: ctx,
+      canvas: scratchCanvas,
       transform: [PRINT_UNITS, 0, 0, PRINT_UNITS, 0, 0],
       viewport: pdfPage.getViewport({ scale: 1, rotation: size.rotation }),
       intent: "print",
@@ -125,9 +125,9 @@ class PDFPrintService {
     // In browsers where @page + size is not supported, the next stylesheet
     // will be ignored and the user has to select the correct paper size in
     // the UI if wanted.
-    this.pageStyleSheet = document.createElement("style");
-    this.pageStyleSheet.textContent = `@page { size: ${width}pt ${height}pt;}`;
-    body.append(this.pageStyleSheet);
+    this.pageStyleSheet = new CSSStyleSheet();
+    this.pageStyleSheet.replaceSync(`@page { size: ${width}pt ${height}pt;}`);
+    document.adoptedStyleSheets.push(this.pageStyleSheet);
   }
 
   destroy() {
@@ -142,9 +142,20 @@ class PDFPrintService {
     body.removeAttribute("data-pdfjsprinting");
 
     if (this.pageStyleSheet) {
-      this.pageStyleSheet.remove();
+      document.adoptedStyleSheets = document.adoptedStyleSheets.filter(
+        styleSheet => styleSheet !== this.pageStyleSheet
+      );
       this.pageStyleSheet = null;
     }
+    // MODIF - DR-24186 keep the page images alive (as the Yooz 5.2 viewer did):
+    // performPrint copies them into the print popup, which loads them after
+    // this service is destroyed (about 20 ms after writing the popup).
+    // if (this._blobURLs) {
+    //   for (const url of this._blobURLs) {
+    //     URL.revokeObjectURL(url);
+    //   }
+    // }
+    this._blobURLs = null;
     this.scratchCanvas.width = this.scratchCanvas.height = 0;
     this.scratchCanvas = null;
     activeService = null;
@@ -190,7 +201,13 @@ class PDFPrintService {
     this.throwIfInactive();
     const img = document.createElement("img");
     this.scratchCanvas.toBlob(blob => {
-      img.src = URL.createObjectURL(blob);
+      const blobURL = URL.createObjectURL(blob);
+      img.src = blobURL;
+      // Defer revocation until after printing completes (in destroy()) to avoid
+      // broken print images in Firefox when a service worker is registered,
+      // since Firefox re-fetches blob URLs when rendering the print dialog.
+      // See https://github.com/mozilla/pdf.js/issues/19988
+      (this._blobURLs ??= []).push(blobURL);
     });
 
     const wrapper = document.createElement("div");
@@ -202,13 +219,9 @@ class PDFPrintService {
     img.onload = resolve;
     img.onerror = reject;
 
-    promise
-      .catch(() => {
-        // Avoid "Uncaught promise" messages in the console.
-      })
-      .then(() => {
-        // URL.revokeObjectURL(img.src);
-      });
+    promise.catch(() => {
+      // Avoid "Uncaught promise" messages in the console.
+    });
     return promise;
   }
 
@@ -280,7 +293,10 @@ class PDFPrintService {
 }
 
 const print = window.print;
-window.printPdfViewer = function () {
+// MODIF - DR-24186 the webclient bundles this viewer next to the legacy one,
+// which defines window.printPdfViewer too: the viewer that runs registers it
+// (PDFPrintServiceFactory.registerPrintPdfViewer, from app.js run()).
+const printPdfViewer = function () {
   if (activeService) {
     console.warn("Ignored window.print() because of a pending print job.");
     return;
@@ -295,6 +311,10 @@ window.printPdfViewer = function () {
     dispatchEvent("beforeprint");
   } finally {
     if (!activeService) {
+      if (typeof PDFJSDev !== "undefined" && PDFJSDev.test("TESTING")) {
+        // eslint-disable-next-line no-unsafe-finally
+        throw new Error("window.print() is not supported");
+      }
       console.error("Expected print service to be initialized.");
       ensureOverlay().then(function () {
         overlayManager.closeIfActive(dialog);
@@ -408,12 +428,14 @@ function ensureOverlay() {
   return overlayPromise;
 }
 
-/**
- * @implements {IPDFPrintServiceFactory}
- */
-class PDFPrintServiceFactory {
+class PDFPrintServiceFactory extends BasePrintServiceFactory {
   static initGlobals(app) {
     viewerApp = app;
+  }
+
+  // MODIF - DR-24186 see printPdfViewer above
+  static registerPrintPdfViewer() {
+    window.printPdfViewer = printPdfViewer;
   }
 
   static get supportsPrinting() {
